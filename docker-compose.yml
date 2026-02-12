@@ -18,6 +18,7 @@ services:
       start_period: 20s
 
   backend:
+    container_name: vms-backend
     build: ./backend
     command: uvicorn src.main:app --host 0.0.0.0 --port 8000
     env_file: .env
@@ -26,7 +27,7 @@ services:
         condition: service_healthy
     networks:
       - internal
-      - proxy-network
+      - proxy_net
 
   telegram-bot:
     build: ./telegram-bot
@@ -44,5 +45,5 @@ networks:
   internal:
     driver: bridge
 
-  proxy-network:
+  proxy_net:
     external: true
