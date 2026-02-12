@@ -1,9 +1,13 @@
+import os
+
 import httpx
 from sqladmin import ModelView
+from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from starlette.requests import Request
 from markupsafe import Markup
 
+from src.database import AsyncSessionLocal
 from src.models.appartment import Apartment
 from src.models.request import GuestRequest, RequestStatus
 from src.models.user import UserRole, User
@@ -38,6 +42,8 @@ class RequestAdmin(AuditMixin, ModelView, model=GuestRequest):
     name_plural = "Пропуски (Заявки)"
     icon = "fa-solid fa-list-check"
 
+    list_template = "refresh.html"
+
     can_create = False
     can_delete = False
     can_export = False
@@ -67,38 +73,44 @@ class RequestAdmin(AuditMixin, ModelView, model=GuestRequest):
     }
 
     async def on_model_change(self, data, model, is_created, request):
-        # 1. Виконуємо стандартне збереження
+        new_status = data.get("status")
+        status_str = str(new_status)
+
         await super().on_model_change(data, model, is_created, request)
 
-        # 2. Перевіряємо, чи це зміна статусу на COMPLETED
-        # is_created == False (бо це редагування існуючої заявки)
-        if not is_created and model.status == RequestStatus.COMPLETED:
+        is_completed = status_str in ["COMPLETED", "completed", "RequestStatus.COMPLETED"]
 
-            # 3. Отримуємо Telegram ID мешканця
-            # Нам треба "підвантажити" юзера, бо в model може бути тільки ID
-            # Але часто ORM вже тримає зв'язок. Перевіримо:
-            user = model.user
-            if user and user.telegram_id:
+        if not is_created and is_completed:
+            try:
+                async with AsyncSessionLocal() as session:
+                    stmt = select(User).where(User.id == model.user_id)
+                    result = await session.execute(stmt)
+                    user = result.scalars().first()
 
-                # 4. Відправляємо повідомлення в Telegram
-                # Ми робимо це напряму через API Telegram, щоб не залежати від контейнера бота
-                message_text = (
-                    f"✅ **Ваш гість прибув!**\n\n"
-                    f"Охорона підтвердила в'їзд/вхід:\n"
-                    f"🚗 {model.value}\n"
-                    f"🕒 {model.visit_date.strftime('%H:%M')}"
-                )
+                if user and user.telegram_id:
+                    bot_token = os.getenv("BOT_TOKEN")
+                    msg_text = (
+                        f"✅ **Ваш гість заїхав!**\n\n"
+                        f"🚗 Авто: {model.value}\n"
+                        f"🕒 {model.visit_date.strftime('%H:%M')}"
+                    )
 
-                try:
-                    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
                     async with httpx.AsyncClient() as client:
-                        await client.post(url, json={
-                            "chat_id": user.telegram_id,
-                            "text": message_text,
-                            "parse_mode": "Markdown"
-                        })
-                except Exception as e:
-                    print(f"Failed to send notification: {e}")
+                        await client.post(
+                            f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                            json={
+                                "chat_id": user.telegram_id,
+                                "text": msg_text,
+                                "parse_mode": "Markdown"
+                            }
+                        )
+                else:
+                    print(f"DEBUG: User not found (id={model.user_id}) or no telegram_id.")
+
+            except Exception as e:
+                print(f"ERROR: {e}")
+                import traceback
+                traceback.print_exc()
 
     def list_query(self, request):
         query = super().list_query(request)
