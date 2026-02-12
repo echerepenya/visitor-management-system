@@ -12,6 +12,12 @@ services:
       - "5432:5432"
     networks:
       - internal
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
 
   backend:
     build: ./backend
@@ -22,7 +28,8 @@ services:
       - "8000:8000"
     env_file: .env
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - internal
 
