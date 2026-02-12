@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - internal
+
+  backend:
+    build: ./backend
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000
+    env_file: .env
+    depends_on:
+      - db
+    networks:
+      - internal
+      - proxy-network
+
+  telegram-bot:
+    build: ./telegram-bot
+    command: python src/main.py
+    env_file: .env
+    depends_on:
+      - backend
+    networks:
+      - internal
+
+volumes:
+  postgres_data:
+
+networks:
+  internal:
+    driver: bridge
+
+  proxy-network:
+    external: true
