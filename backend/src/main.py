@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from sqladmin import Admin
 from sqlalchemy import select
+from starlette.responses import RedirectResponse
 
 from src.config import settings
 from src.database import engine, AsyncSessionLocal
@@ -14,11 +15,16 @@ from src.services.admin.car_admin import CarAdmin
 from src.services.admin.request_admin import RequestAdmin
 from src.services.admin.user_admin import UserAdmin
 
-app = FastAPI(title="Visitor Management System")
+app = FastAPI(title="Visitor Management System API")
 
 app.include_router(auth.router)
 app.include_router(cars.router)
 app.include_router(requests.router)
+
+
+@app.get("/", include_in_schema=False)
+async def root():
+    return RedirectResponse(url="/admin")
 
 admin = Admin(app, engine, authentication_backend=authentication_backend)
 admin.add_view(BuildingAdmin)
