@@ -9,13 +9,13 @@ from src.models.user import User
 from src.models.request import GuestRequest, RequestType, RequestStatus
 from src.utils import normalize_plate
 
-router = APIRouter(prefix="/api/requests", tags=["Guest Requests"])
+router = APIRouter(prefix="/requests", tags=["Guest Requests"])
 
 
 class CreateRequestSchema(BaseModel):
-    telegram_id: int  # ID юзера в телеграмі (надійно)
-    type: RequestType  # guest_car, taxi...
-    value: str  # Номер авто або ім'я
+    telegram_id: int
+    type: RequestType
+    value: str
     comment: Optional[str] = None
 
 

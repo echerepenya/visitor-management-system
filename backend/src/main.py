@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from sqladmin import Admin
 from sqlalchemy import select
 from starlette.responses import RedirectResponse
@@ -7,7 +7,7 @@ from src.config import settings
 from src.database import engine, AsyncSessionLocal
 from src.routers import cars, auth, requests
 from src.models.user import User, UserRole
-from src.security import authentication_backend, get_password_hash
+from src.security import authentication_backend, get_password_hash, get_api_key
 from src.services.admin.apartment_admin import ApartmentAdmin
 from src.services.admin.audit_log_admin import AuditLogAdmin
 from src.services.admin.building_admin import BuildingAdmin
@@ -17,9 +17,9 @@ from src.services.admin.user_admin import UserAdmin
 
 app = FastAPI(title="Visitor Management System API")
 
-app.include_router(auth.router)
-app.include_router(cars.router)
-app.include_router(requests.router)
+app.include_router(auth.router, prefix='/api', dependencies=[Depends(get_api_key)])
+app.include_router(cars.router, prefix="/api", dependencies=[Depends(get_api_key)])
+app.include_router(requests.router, prefix="/api", dependencies=[Depends(get_api_key)])
 
 
 @app.get("/", include_in_schema=False)

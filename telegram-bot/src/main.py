@@ -19,6 +19,12 @@ from aiogram.enums import ParseMode
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 API_URL = os.getenv("API_URL", "http://backend:8000/api")
+API_KEY = os.getenv("API_KEY")
+
+HEADERS = {
+    "X-API-Key": API_KEY,
+    "Content-Type": "application/json"
+}
 
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger(__name__)
@@ -71,20 +77,17 @@ bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.MAR
 dp = Dispatcher()
 
 
-# ==========================================
-# 1. ЛОГІКА АВТОРИЗАЦІЇ
-# ==========================================
-
+# 1. Authorization
 @dp.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext):
     """
-    Точка входу. Скидає всі стани і просить авторизацію.
+    Entry point. Reset status and asks for credentials
     """
     await state.clear()
     await message.answer(
         "👋 **Вітаю! Я бот вашого ЖК.**\n\n"
         "Я допоможу вам пропускати гостей та перевіряти авто.\n"
-        "Для початку роботи мені потрібно підтвердити, що ви є мешканцем.",
+        "Для початку роботи мені потрібно підтвердити, що ви є мешканцем.\n",
         reply_markup=kb_auth
     )
 
@@ -92,9 +95,18 @@ async def cmd_start(message: Message, state: FSMContext):
 @dp.message(F.contact)
 async def handle_contact(message: Message, state: FSMContext):
     """
-    Processes shared contact
+    Processes shared credentials
     """
     contact = message.contact
+
+    if contact.user_id != message.from_user.id:
+        await message.answer(
+            "⛔️ **Помилка безпеки!**\n\n"
+            "Ви надіслали чужий контакт або переслали повідомлення.\n"
+            "Будь ласка, натисніть саме кнопку **'📱 Надіслати номер телефону'** внизу екрану.",
+            reply_markup=kb_auth
+        )
+        return
 
     payload = {
         "phone": contact.phone_number,
@@ -106,12 +118,11 @@ async def handle_contact(message: Message, state: FSMContext):
 
     async with httpx.AsyncClient() as client:
         try:
-            # Стукаємо на наш новий ендпоінт авторизації
-            response = await client.post(f"{API_URL}/auth/telegram", json=payload, timeout=10.0)
+            response = await client.post(f"{API_URL}/auth/telegram", json=payload, headers=HEADERS, timeout=10.0)
 
             if response.status_code == 200:
                 data = response.json()
-                # Успіх
+
                 await message.answer(
                     f"✅ **Авторизація успішна!**\n\n"
                     f"👤 **{data.get('name')}**\n"
@@ -122,14 +133,12 @@ async def handle_contact(message: Message, state: FSMContext):
                     reply_markup=kb_main
                 )
             elif response.status_code == 404:
-                # Немає в базі
                 await message.answer(
                     "❌ **Ваш номер не знайдено в базі мешканців.**\n\n"
-                    "Будь ласка, зверніться до голови ОСББ або охорони, щоб додати ваш номер телефону в систему.",
+                    "Будь ласка, зверніться до ініціативної групи вашого будинку або охорони, щоб додати ваш номер телефону в систему.",
                     reply_markup=ReplyKeyboardRemove()
                 )
             else:
-                # Помилка сервера
                 await message.answer(f"⚠️ Помилка сервера: {response.text}")
 
         except httpx.RequestError as e:
@@ -194,7 +203,7 @@ async def pass_value_chosen(message: Message, state: FSMContext):
 
     try:
         async with httpx.AsyncClient() as client:
-            resp = await client.post(f"{API_URL}/requests/", json=payload, timeout=10.0)
+            resp = await client.post(f"{API_URL}/requests/", json=payload, headers=HEADERS, timeout=10.0)
 
             if resp.status_code == 201:
                 await message.answer(
@@ -227,7 +236,7 @@ async def cmd_contacts(message: Message):
 
 @dp.message(F.text == "ℹ️ Мій статус")
 async def cmd_me(message: Message):
-    # Тут можна зробити запит на API, щоб показати актуальну інфу
+    # TODO add DB query to get user status
     await message.answer("Ваш статус: ✅ Активний мешканець")
 
 
@@ -248,7 +257,7 @@ async def handle_text_lookup(message: Message):
     try:
         async with httpx.AsyncClient() as client:
             # run "smart" search in cars table and in GuestRequests
-            resp = await client.get(f"{API_URL}/cars/check/{text}", timeout=5.0)
+            resp = await client.get(f"{API_URL}/cars/check/{text}", headers=HEADERS, timeout=5.0)
 
             if resp.status_code != 200:
                 await msg.edit_text("⚠️ Помилка сервера при пошуку.")

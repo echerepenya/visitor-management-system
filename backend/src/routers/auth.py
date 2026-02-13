@@ -10,7 +10,7 @@ from src.models.appartment import Apartment
 from src.models.user import User
 from src.utils import normalize_phone
 
-router = APIRouter(prefix="/api/auth", tags=["Auth"])
+router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
 class TelegramLoginSchema(BaseModel):

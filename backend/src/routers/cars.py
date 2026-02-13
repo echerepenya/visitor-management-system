@@ -11,7 +11,7 @@ from src.models.user import User
 from src.schemas.car import CarResponse
 from src.utils import normalize_plate
 
-router = APIRouter(prefix="/api/cars", tags=["Cars"])
+router = APIRouter(prefix="/cars", tags=["Cars"])
 
 
 @router.get("/check/{plate}")
