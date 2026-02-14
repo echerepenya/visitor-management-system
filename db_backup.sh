@@ -4,7 +4,7 @@ CONTAINER_NAME="vms-db"
 DB_USER=$DB_USER
 DB_NAME=$DB_NAME
 
-BACKUP_DIR="/home/ubuntu/vms"
+BACKUP_DIR="/home/ubuntu/backups/vms"
 GDRIVE_DIR="gdrive:/Backups/VMS"
 
 DATE=$(date +"%Y-%m-%d_%H-%M")
@@ -22,7 +22,7 @@ if [ -f "$BACKUP_DIR/$FILENAME" ]; then
 
     if [ $? -eq 0 ]; then
         echo "Upload success."
-        rm $BACKUP_DIR/$FILENAME
+        # rm $BACKUP_DIR/$FILENAME
     else
         echo "Error uploading to Google Drive!"
     fi
