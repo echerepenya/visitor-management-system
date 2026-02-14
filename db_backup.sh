@@ -22,7 +22,7 @@ if [ -f "$BACKUP_DIR/$FILENAME" ]; then
 
     if [ $? -eq 0 ]; then
         echo "Upload success."
-        # rm $BACKUP_DIR/$FILENAME
+        rm $BACKUP_DIR/$FILENAME
     else
         echo "Error uploading to Google Drive!"
     fi
