@@ -1,7 +1,10 @@
+import os
+
 from fastapi import FastAPI, Depends
 from sqladmin import Admin
 from sqlalchemy import select
 from starlette.responses import RedirectResponse
+from starlette.middleware.sessions import SessionMiddleware
 
 from src.config import settings
 from src.database import engine, AsyncSessionLocal
@@ -17,9 +20,14 @@ from src.services.admin.user_admin import UserAdmin
 
 app = FastAPI(title="Visitor Management System API")
 
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv("SECRET_KEY", "your_super_secret_key_change_me")
+)
+
 app.include_router(auth.router, prefix='/api', dependencies=[Depends(get_api_key)])
 app.include_router(cars.router, prefix="/api", dependencies=[Depends(get_api_key)])
-app.include_router(requests.router, prefix="/api", dependencies=[Depends(get_api_key)])
+app.include_router(requests.router, prefix="/api")
 
 
 @app.get("/", include_in_schema=False)

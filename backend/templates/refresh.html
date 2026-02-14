@@ -1,6 +1,46 @@
 {% extends "sqladmin/list.html" %}
 
-{% block head %}
-    {{ super() }}
-    <meta http-equiv="refresh" content="30">
+{% block content %}
+  {{ super() }}
+
+  <script>
+    async function completeRequest(requestId) {
+        event.preventDefault();
+
+        // 1. Питаємо підтвердження
+        if (!confirm("Заявка виконана? Закрити?")) {
+            return;
+        }
+
+        try {
+            // 2. Відправляємо запит на наш API
+            // Важливо: перевір правильність шляху /api/requests/...
+            const response = await fetch(`/api/requests/${requestId}/complete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // Якщо потрібна авторизація, додай токен, але для адмінки
+                    // часто куки сесії браузера вистачає, якщо API відкритий
+                    // або додай заголовок 'X-API-KEY': 'твій ключ' якщо треба
+                }
+            });
+
+            if (response.ok) {
+                // 3. Успіх - перезавантажуємо сторінку, щоб оновити статус
+                // Можна використати alert, але перезавантаження надійніше покаже новий статус
+                window.location.reload();
+            } else {
+                const data = await response.json();
+                alert("Помилка: " + (data.detail || "Не вдалося оновити статус"));
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Сталася помилка мережі");
+        }
+    }
+
+    setTimeout(function(){
+       window.location.reload();
+    }, 60000);
+  </script>
 {% endblock %}

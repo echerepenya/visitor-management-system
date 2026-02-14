@@ -14,6 +14,18 @@ from src.models.user import UserRole, User
 from src.services.audit_mixin import AuditMixin
 
 
+def approve_button_formatter(model, _):
+    if model.status == RequestStatus.NEW:
+        return Markup(
+            f'''
+            <button class="btn btn-success btn-sm" onclick="completeRequest({model.id})">
+                <i class="fa-solid fa-check"></i> Пропустити
+            </button>
+            '''
+        )
+    return ""
+
+
 def status_formatter(value):
     colors = {
         RequestStatus.NEW: "green",
@@ -50,6 +62,7 @@ class RequestAdmin(AuditMixin, ModelView, model=GuestRequest):
 
     column_list = [
         GuestRequest.id,
+        "actions",
         GuestRequest.status,
         GuestRequest.visit_date,
         GuestRequest.type,
@@ -70,6 +83,7 @@ class RequestAdmin(AuditMixin, ModelView, model=GuestRequest):
     column_formatters = {
         GuestRequest.status: lambda m, a: status_formatter(m.status),
         "address_info": address_formatter,
+        "actions": approve_button_formatter,
     }
 
     async def on_model_change(self, data, model, is_created, request):

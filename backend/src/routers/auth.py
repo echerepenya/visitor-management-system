@@ -41,6 +41,8 @@ async def telegram_login(data: TelegramLoginSchema, db: AsyncSession = Depends(g
     if data.first_name and user.full_name is None:
         user.full_name = data.first_name
 
+    # TODO add saving of personal data processing agreement
+
     await db.commit()
 
     return {
