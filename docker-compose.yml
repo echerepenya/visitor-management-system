@@ -50,12 +50,12 @@ services:
       - backend
     networks:
       - internal
-        
+
   frontend:
     build: ./frontend
     container_name: vms-frontend
     ports:
-      - "80:80"
+      - "80:8090"
     volumes:
       - ./frontend:/app
     env_file:
