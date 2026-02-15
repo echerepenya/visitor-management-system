@@ -34,7 +34,7 @@ class User(Base):
     requests = relationship("GuestRequest", back_populates="user")
 
     def __repr__(self):
-        return f"{self.full_name or self.phone_number} ({self.role})"
+        return f"{self.phone_number} {'('+self.full_name+')' if self.full_name else self.apartment if self.apartment else ''}"
 
 
 class RestrictedUser(User):

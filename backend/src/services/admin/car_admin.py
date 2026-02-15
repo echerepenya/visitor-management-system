@@ -11,6 +11,11 @@ class CarAdmin(AuditMixin, ModelView, model=Car):
     name = "Авто"
     name_plural = "Авто"
 
+    can_export = False
+    can_view_details = False
+
+    column_searchable_list = [Car.plate_number]
+
     icon = "fa-solid fa-car"
     column_list = [
         Car.plate_number,
@@ -20,9 +25,17 @@ class CarAdmin(AuditMixin, ModelView, model=Car):
         "owner.apartment.building.address",
         "owner.apartment.number"
     ]
-    form_columns = [Car.plate_number, Car.model, Car.owner, Car.notes]
 
-    can_export = False
+    column_labels = {
+        "plate_number": "Номер авто",
+        "model": "Марка",
+        "owner.full_name": "Власник",
+        "owner.phone_number": "Телефон",
+        "owner.apartment.building.address": "Будинок",
+        "owner.apartment.number": "Квартира"
+    }
+
+    form_columns = [Car.plate_number, Car.model, Car.owner, Car.notes]
 
     form_ajax_refs = {
         "owner": {
@@ -33,4 +46,4 @@ class CarAdmin(AuditMixin, ModelView, model=Car):
     }
 
     def is_accessible(self, request: Request) -> bool:
-        return "token" in request.session
+        return request.session.get("is_admin")
