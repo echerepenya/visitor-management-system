@@ -6,6 +6,9 @@ from src.models.user import UserRole
 
 
 class AuditLogAdmin(ModelView, model=AuditLog):
+    name = "Лог"
+    name_plural = "Логи"
+
     column_list = [AuditLog.created_at, AuditLog.admin_username, AuditLog.action, AuditLog.target_model,
                    AuditLog.details]
     icon = "fa-solid fa-list-check"
@@ -13,8 +16,9 @@ class AuditLogAdmin(ModelView, model=AuditLog):
     can_create = False
     can_edit = False
     can_delete = False
+    can_export = False
 
     column_default_sort = ("created_at", True)
 
     def is_accessible(self, request: Request) -> bool:
-        return request.session.get("role") == UserRole.SUPERUSER
+        return request.session.get("is_superadmin")

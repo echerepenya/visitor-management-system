@@ -57,14 +57,18 @@ class AdminAuth(AuthenticationBackend):
             user = result.scalars().first()
 
         if (not user) or (not verify_password(password_input, user.hashed_password)):
+            logging.info("User is not found or password is incorrect")
             return False
 
-        if user.role == UserRole.RESIDENT:
+        if not user.is_admin and not user.is_superadmin:
+            logging.warning("User is found but it is not admin or superadmin")
             return False
 
         request.session.update({
             "token": user.username,
             "role": user.role.value,
+            "is_admin": user.is_admin,
+            "is_superadmin": user.is_superadmin,
             "user_id": user.id
         })
 

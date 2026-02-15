@@ -7,9 +7,7 @@ from src.utils import normalize_phone
 
 class UserRole(str, enum.Enum):
     RESIDENT = "resident"  # bot only
-    GUARD = "guard"  # bot + limited access to admin panel
-    ADMIN = "admin"  # full admin panel access
-    SUPERUSER = "superuser"  # admin + can create/delete admins
+    GUARD = "guard"  # bot + requests dashboard
 
 
 class User(Base):
@@ -24,16 +22,26 @@ class User(Base):
 
     role = Column(Enum(UserRole), default=UserRole.RESIDENT, nullable=False)
     full_name = Column(String(100), nullable=True)
-    is_active = Column(Boolean, default=True)
+
+    is_agreed_processing_personal_data = Column(Boolean, default=False, nullable=False)
+    is_admin = Column(Boolean, default=False, nullable=False)  # access to admin panel, allowed to create/edit residents and guards
+    is_superadmin = Column(Boolean, default=False, nullable=False)  # allows to create/edit all type users, buildings, apartments
 
     apartment_id = Column(Integer, ForeignKey("apartments.id"), nullable=True)
-    apartment = relationship("Apartment", back_populates="residents")
+    apartment = relationship("Apartment", back_populates="residents", lazy="selectin")
 
     cars = relationship("Car", back_populates="owner", cascade="all, delete-orphan")
     requests = relationship("GuestRequest", back_populates="user")
 
     def __repr__(self):
         return f"{self.full_name or self.phone_number} ({self.role})"
+
+
+class RestrictedUser(User):
+    # just mirroring existing table
+    __mapper_args__ = {
+        "polymorphic_identity": "restricted",
+    }
 
 
 @event.listens_for(User, 'before_insert')

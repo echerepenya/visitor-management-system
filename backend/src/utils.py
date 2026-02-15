@@ -10,7 +10,7 @@ def normalize_phone(phone: str | None) -> str | None:
         return None
 
     clean = re.sub(r'[^\d]', '', phone)
-    if clean.startswith('0'):  # 050 -> 38050
+    if clean.startswith('0') and len(clean) == 10:  # 050 -> 38050
         clean = '38' + clean
     return clean
 
