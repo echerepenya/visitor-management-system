@@ -55,9 +55,7 @@ services:
     build: ./frontend
     container_name: vms-frontend
     ports:
-      - "80:8090"
-    volumes:
-      - ./frontend:/app
+      - "8082:80"
     env_file:
       - .env
     depends_on:
