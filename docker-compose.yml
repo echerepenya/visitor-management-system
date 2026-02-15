@@ -50,6 +50,20 @@ services:
       - backend
     networks:
       - internal
+        
+  frontend:
+    build: ./frontend
+    container_name: vms-frontend
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend:/app
+    env_file:
+      - .env
+    depends_on:
+      - backend
+    networks:
+      - internal
 
 volumes:
   postgres_data:
