@@ -26,7 +26,7 @@ async def cmd_contacts(message: Message):
 async def cmd_me(message: Message):
     telegram_id = message.from_user.id
 
-    url = f"{API_URL}/auth/telegram/{telegram_id}"
+    url = f"{API_URL}/telegram/user/{telegram_id}"
 
     async with httpx.AsyncClient() as client:
         try:

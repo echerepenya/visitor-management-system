@@ -7,8 +7,12 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
+      TZ: Europe/Kyiv
+      PGTZ: Europe/Kyiv
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
     ports:
       - "5432:5432"
     networks:
@@ -30,6 +34,8 @@ services:
     ports:
       - "8000:8000"
     env_file: .env
+    environment:
+      TZ: Europe/Kyiv
     depends_on:
       db:
         condition: service_healthy
@@ -46,6 +52,20 @@ services:
     env_file: .env
     environment:
       - PYTHONPATH=/app
+    depends_on:
+      - backend
+    networks:
+      - internal
+
+  frontend:
+    build: ./frontend
+    container_name: vms-frontend
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend:/app
+    env_file:
+      - .env
     depends_on:
       - backend
     networks:

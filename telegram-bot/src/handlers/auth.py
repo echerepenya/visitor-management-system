@@ -61,7 +61,7 @@ async def handle_contact(message: Message, state: FSMContext):
 
     async with httpx.AsyncClient() as client:
         try:
-            response = await client.post(f"{API_URL}/auth/telegram", json=payload, headers=HEADERS, timeout=10.0)
+            response = await client.post(f"{API_URL}/telegram/login", json=payload, headers=HEADERS, timeout=10.0)
 
             if response.status_code == 200:
                 data = response.json()

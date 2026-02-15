@@ -69,7 +69,7 @@ async def pass_value_chosen(message: Message, state: FSMContext):
 
     try:
         async with httpx.AsyncClient() as client:
-            resp = await client.post(f"{API_URL}/requests/", json=payload, headers=HEADERS, timeout=10.0)
+            resp = await client.post(f"{API_URL}/telegram/create-request", json=payload, headers=HEADERS, timeout=10.0)
 
             if resp.status_code == 201:
                 await message.answer(

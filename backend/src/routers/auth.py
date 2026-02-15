@@ -1,94 +1,38 @@
-from typing import Optional
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from pydantic import BaseModel
 from sqlalchemy.orm import selectinload
 from starlette import status
+from fastapi.security import OAuth2PasswordRequestForm
 
 from src.database import get_db
-from src.models.appartment import Apartment
 from src.models.user import User, UserRole
-from src.utils import normalize_phone
+from src.security import create_access_token, verify_password
 
-router = APIRouter(prefix="/auth", tags=["Auth"])
-
-
-class UserProfileSchema(BaseModel):
-    id: int
-    phone_number: str
-    role: UserRole
-    full_name: Optional[str] = None
-    building: Optional[str] = None
-    apartment_number: Optional[str] = None
-    is_admin: Optional[bool] = False
-    is_superadmin: Optional[bool] = False
+router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
 
-class TelegramLoginSchema(BaseModel):
-    phone: str
-    telegram_id: int
-    first_name: str | None = None
+@router.post("/login")
+async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
+    username_input = form_data.username
+    password_input = form_data.password
 
-
-@router.post("/telegram")
-async def telegram_login(data: TelegramLoginSchema, db: AsyncSession = Depends(get_db)):
-    clean_phone = normalize_phone(data.phone)
-
-    stmt = (
-        select(User)
-        .options(
-            selectinload(User.apartment)
-            .selectinload(Apartment.building)
-        )
-        .where(User.phone_number == clean_phone)
-    )
+    stmt = select(User).where(User.username == username_input)
     result = await db.execute(stmt)
     user = result.scalars().first()
 
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Phone not found")
+    if (not user) or (not verify_password(password_input, user.hashed_password)):
+        logging.info("Guard user is not found or password is incorrect")
+        return False
 
-    user.telegram_id = data.telegram_id
-    if data.first_name and user.full_name is None:
-        user.full_name = data.first_name
-
-    if not user.is_agreed_processing_personal_data:
-        user.is_agreed_processing_personal_data = True
-
-    await db.commit()
+    if not user.role == UserRole.GUARD:
+        logging.warning("User is found but its role is not Guard")
+        return False
 
     return {
-        "status": "ok",
-        "role": user.role,
-        "name": user.full_name,
-        "apartment": f"{user.apartment.building.address}, {user.apartment.number}" if user.apartment else "N/A",
-        "is_admin": user.is_admin,
-        "is_superadmin": user.is_superadmin
+        "access_token": create_access_token(data={"sub": form_data.username}),
+        "role:": user.role.value,
+        "token_type": "bearer"
     }
-
-
-@router.get("/telegram/{telegram_id}", response_model=UserProfileSchema, dependencies=[Depends(get_db)])
-async def get_user_by_telegram(telegram_id: int, db: AsyncSession = Depends(get_db)):
-    stmt = (
-        select(User)
-        .options(selectinload(User.apartment).selectinload(Apartment.building))
-        .where(User.telegram_id == telegram_id)
-    )
-    result = await db.execute(stmt)
-    user = result.scalars().first()
-
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    return UserProfileSchema(
-        id=user.id,
-        phone_number=user.phone_number,
-        role=user.role,
-        full_name=user.full_name,
-        building=user.apartment.building.address if user.apartment else None,
-        apartment_number=str(user.apartment.number) if user.apartment else None,
-        is_admin=user.is_admin,
-        is_superadmin=user.is_superadmin
-    )

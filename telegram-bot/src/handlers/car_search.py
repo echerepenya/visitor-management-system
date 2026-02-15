@@ -28,7 +28,7 @@ async def handle_text_lookup(message: Message):
     try:
         async with httpx.AsyncClient() as client:
             # run "smart" search in cars table and in GuestRequests
-            resp = await client.get(f"{API_URL}/cars/check/{text}", headers=HEADERS, timeout=5.0)
+            resp = await client.get(f"{API_URL}/telegram/find-car/{text}", headers=HEADERS, timeout=5.0)
 
             if resp.status_code != 200:
                 await msg.edit_text("⚠️ Помилка сервера при пошуку.")
@@ -37,22 +37,8 @@ async def handle_text_lookup(message: Message):
             data = resp.json()
 
             if data.get("found"):
-                bot_user_data_response = await client.get(
-                    f"{API_URL}/auth/telegram/{telegram_id}",
-                    headers=HEADERS,
-                    timeout=5.0
-                )
-
-                if bot_user_data_response.status_code == 404:
-                    await message.answer("❌ Вас не знайдено в базі даних. Зверніться до адміністратора.")
-                    return
-
-                if bot_user_data_response.status_code != 200:
-                    await message.answer("⚠️ Помилка отримання даних від сервера.")
-                    return
-
-                bot_user_data = bot_user_data_response.json()
-                bot_user_role = bot_user_data.get("role", "resident")
+                bot_user_role = data.get("user_role")
+                print('bot_user_role:', bot_user_role)
 
                 print(data["type"])
 

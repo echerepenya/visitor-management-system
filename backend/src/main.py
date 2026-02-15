@@ -1,14 +1,14 @@
-import os
-
 from fastapi import FastAPI, Depends
 from sqladmin import Admin
 from sqlalchemy import select
 from starlette.responses import RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
+from fastapi.middleware.cors import CORSMiddleware
+from starlette import status
 
 from src.config import settings
 from src.database import engine, AsyncSessionLocal
-from src.routers import cars, auth, requests
+from src.routers import auth, requests, telegram
 from src.models.user import User, UserRole
 from src.security import authentication_backend, get_password_hash, get_api_key
 from src.services.admin.apartment_admin import ApartmentAdmin
@@ -17,19 +17,27 @@ from src.services.admin.building_admin import BuildingAdmin
 from src.services.admin.car_admin import CarAdmin
 from src.services.admin.user_admin import SuperUserAdmin, RestrictedUserAdmin
 
-app = FastAPI(title="Visitor Management System API")
+app = FastAPI(title="VMS API")
 
 app.add_middleware(
     SessionMiddleware,
-    secret_key=os.getenv("SECRET_KEY", "your_super_secret_key_change_me")
+    secret_key=settings.SECRET_KEY
 )
 
-app.include_router(auth.router, prefix='/api', dependencies=[Depends(get_api_key)])
-app.include_router(cars.router, prefix="/api", dependencies=[Depends(get_api_key)])
-app.include_router(requests.router, prefix="/api")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.BACKEND_CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(auth.router)
+app.include_router(telegram.router)
+app.include_router(requests.router)
 
 
-admin = Admin(app, engine, authentication_backend=authentication_backend, title="Адмін панель")
+admin = Admin(app, engine, authentication_backend=authentication_backend, title="VMS адмін")
 admin.add_view(BuildingAdmin)
 admin.add_view(ApartmentAdmin)
 admin.add_view(RestrictedUserAdmin)
