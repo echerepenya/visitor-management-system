@@ -5,6 +5,7 @@ from starlette.responses import RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from starlette import status
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from src.config import settings
 from src.database import engine, AsyncSessionLocal
@@ -17,12 +18,14 @@ from src.services.admin.building_admin import BuildingAdmin
 from src.services.admin.car_admin import CarAdmin
 from src.services.admin.user_admin import SuperUserAdmin, RestrictedUserAdmin
 
-app = FastAPI(title="VMS API")
+app = FastAPI(title="VMS API", root_path="")
 
 app.add_middleware(
     SessionMiddleware,
     secret_key=settings.SECRET_KEY
 )
+
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["*"])
 
 app.add_middleware(
     CORSMiddleware,
@@ -36,10 +39,6 @@ app.include_router(auth.router)
 app.include_router(telegram.router)
 app.include_router(requests.router)
 
-
-@app.get("/", include_in_schema=False)
-async def root():
-    return RedirectResponse(url="/admin")
 
 admin = Admin(app, engine, authentication_backend=authentication_backend, title="VMS адмін")
 admin.add_view(BuildingAdmin)
