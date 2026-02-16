@@ -37,7 +37,7 @@ class BaseUserAdmin(AuditMixin, ModelView):
 
     def list_query(self, request):
         from sqlalchemy.orm import selectinload
-        from src.models.appartment import Apartment
+        from src.models.apartment import Apartment
         return super().list_query(request).options(
             selectinload(self.model.apartment).selectinload(Apartment.building)
         )

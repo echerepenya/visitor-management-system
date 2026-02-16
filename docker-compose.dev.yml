@@ -58,7 +58,10 @@ services:
       - internal
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        - VITE_API_URL=localhost:8000/api
     container_name: vms-frontend
     ports:
       - "80:80"

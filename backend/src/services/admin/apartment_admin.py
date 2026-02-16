@@ -2,7 +2,7 @@ from sqladmin import ModelView
 from starlette.requests import Request
 from sqlalchemy.orm import selectinload
 
-from src.models.appartment import Apartment
+from src.models.apartment import Apartment
 from src.services.audit_mixin import AuditMixin
 
 

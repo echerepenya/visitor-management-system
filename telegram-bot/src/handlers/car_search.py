@@ -23,12 +23,10 @@ async def handle_text_lookup(message: Message):
 
     msg = await message.answer("🔍 Шукаю авто...")
 
-    telegram_id = message.from_user.id
-
     try:
         async with httpx.AsyncClient() as client:
             # run "smart" search in cars table and in GuestRequests
-            resp = await client.get(f"{API_URL}/telegram/find-car/{text}", headers=HEADERS, timeout=5.0)
+            resp = await client.get(f"{API_URL}/telegram/car-search/{text}", headers=HEADERS, timeout=5.0)
 
             if resp.status_code != 200:
                 await msg.edit_text("⚠️ Помилка сервера при пошуку.")
@@ -37,33 +35,48 @@ async def handle_text_lookup(message: Message):
             data = resp.json()
 
             if data.get("found"):
-                bot_user_role = data.get("user_role")
-                print('bot_user_role:', bot_user_role)
+                # find user role who made the query to return data depending on rights
+                user_resp = await client.get(f"{API_URL}/telegram/user/{message.from_user.id}", headers=HEADERS, timeout=5.0)
+                try:
+                    user_data = user_resp.json()
+                except:
+                    user_data = None
 
-                print(data["type"])
+                user_role = user_data.get('role') if user_data else 'resident'
+
+                info = data["info"]
+
+                building = info.get('building')
+                apartment = f", {info.get('apartment')}" if info.get('apartment') else None
+
+                if building:
+                    address = f"{building}{apartment if apartment else ''}" if user_role == 'guard' else building
+                else:
+                    address = "Немає адреси"
+
+                phone = f"📞 `{info.get('phone')}`" if user_role == 'guard' else ''
 
                 # -- ВАРІАНТ 1: ЗНАЙДЕНО (Мешканець) --
                 if data["type"] != "guest":
-                    info = data["info"]
                     res_text = (
                         f"🚙 **АВТО МЕШКАНЦЯ**\n\n"
                         f"Номер: `{data['plate']}`\n"
                         f"Власник: {info.get('owner')}\n"
-                        f"🏠 **{info.get('address')}**\n"
-                        # f"📞 `{info.get('phone')}`" if bot_user_role in ['guard', 'admin', 'superdamin'] else ''
+                        f"🏠 **{address}**\n"
+                        f"{phone}"
                     )
+
                     await msg.edit_text(res_text)
 
                 # -- ВАРІАНТ 2: ЗНАЙДЕНО (Гість) --
                 elif data["type"] == "guest":
-                    info = data["info"]
                     guest_text = (
                         f"🚕 **ГІСТЬ (ЗАЯВКА)**\n\n"
                         f"Номер: `{data['plate']}`\n"
                         f"Запросив: {info.get('invited_by')}\n"
-                        f"🏠 **{info.get('address')}**\n"
-                        f"💬 Комент: {info.get('comment')}"
+                        f"🏠 **{address}**\n"
                     )
+
                     await msg.edit_text(guest_text)
             else:
                 # -- ВАРІАНТ 3: НЕ ЗНАЙДЕНО --

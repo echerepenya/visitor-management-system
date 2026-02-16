@@ -8,7 +8,7 @@ from starlette.requests import Request
 from markupsafe import Markup
 
 from src.database import AsyncSessionLocal
-from src.models.appartment import Apartment
+from src.models.apartment import Apartment
 from src.models.request import GuestRequest, RequestStatus
 from src.models.user import UserRole, User
 from src.services.audit_mixin import AuditMixin

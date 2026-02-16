@@ -37,6 +37,10 @@ app.include_router(telegram.router)
 app.include_router(requests.router)
 
 
+@app.get("/", include_in_schema=False)
+async def root():
+    return RedirectResponse(url="/admin")
+
 admin = Admin(app, engine, authentication_backend=authentication_backend, title="VMS адмін")
 admin.add_view(BuildingAdmin)
 admin.add_view(ApartmentAdmin)

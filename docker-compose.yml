@@ -52,7 +52,10 @@ services:
       - internal
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        - VITE_API_URL=${VITE_API_URL}
     container_name: vms-frontend
     ports:
       - "8082:80"
