@@ -37,6 +37,12 @@ class User(Base):
         return f"{self.phone_number} {'('+self.full_name+')' if self.full_name else self.apartment if self.apartment else ''}"
 
 
+@event.listens_for(User, 'before_insert')
+@event.listens_for(User, 'before_update')
+def receive_before_insert(mapper, connection, target):
+    target.phone_number = normalize_phone(target.phone_number)
+
+
 class RestrictedUser(User):
     # just mirroring existing table
     __mapper_args__ = {
@@ -44,7 +50,7 @@ class RestrictedUser(User):
     }
 
 
-@event.listens_for(User, 'before_insert')
-@event.listens_for(User, 'before_update')
+@event.listens_for(RestrictedUser, 'before_insert')
+@event.listens_for(RestrictedUser, 'before_update')
 def receive_before_insert(mapper, connection, target):
     target.phone_number = normalize_phone(target.phone_number)
