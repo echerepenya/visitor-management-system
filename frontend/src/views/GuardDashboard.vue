@@ -163,7 +163,7 @@ const closeRequest = async () => {
 const formatTime = (d) => new Date(d).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
 const formatDate = (d) => new Date(d).toLocaleDateString('uk-UA', { day: 'numeric', month: 'numeric' });
 const translateType = (type) => {
-  const map = { 'guest': 'Гість', 'taxi': 'Таксі', 'delivery': 'Доставка', 'service': 'Сервіс' };
+  const map = { 'guest_car': 'Автомобіль', 'guest_foot': 'Гість', 'taxi': 'Таксі', 'delivery': 'Доставка' };
   return map[type] || type;
 };
 const getTypeColor = (type) => {
