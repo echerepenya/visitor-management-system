@@ -26,7 +26,7 @@
         </div>
 
         <button :disabled="loading" type="submit"
-                class="w-full bg-black text-black font-black py-4 uppercase hover:bg-gray-800 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] active:translate-y-1 transition-all">
+                class="w-full bg-black text-white font-black py-4 uppercase hover:bg-gray-800 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] active:translate-y-1 transition-all">
           {{ loading ? 'Завантаження...' : 'Увійти' }}
         </button>
       </form>
