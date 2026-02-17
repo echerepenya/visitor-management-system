@@ -56,7 +56,7 @@ async def handle_text_lookup(message: Message):
                     address = "Немає адреси"
 
                 phone = f"📞 `{info.get('phone')}`" if user_role == 'guard' else ''
-                owner = f"Власник: {info.get('owner')}`" if user_role == 'guard' else ''
+                owner = f"Власник: `{info.get('owner')}`" if user_role == 'guard' else ''
 
                 # -- ВАРІАНТ 1: ЗНАЙДЕНО (Мешканець) --
                 if data["type"] != "guest":
