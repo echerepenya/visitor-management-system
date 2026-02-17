@@ -2,10 +2,10 @@ import os
 
 
 import httpx
-from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, text
+from sqlalchemy.orm import joinedload
 from pydantic import BaseModel
 from typing import Optional
 from fastapi.security import OAuth2PasswordRequestForm
@@ -13,6 +13,8 @@ from fastapi.security import OAuth2PasswordRequestForm
 from src.database import get_db
 from src.models.user import User, UserRole
 from src.models.request import GuestRequest, RequestType, RequestStatus
+from src.schemas.requests import GuestRequestResponseSchema
+from src.schemas.user import UserBase
 from src.security import get_current_user
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -39,20 +41,16 @@ class CreateRequestSchema(BaseModel):
     comment: Optional[str] = None
 
 
-class GuestRequestResponseSchema(BaseModel):
-    id: int
-    type: str
-    value: str
-    status: str
-    comment: Optional[str] = None
-    created_at: datetime
-
-
 @router.get("/", response_model=list[GuestRequestResponseSchema], dependencies=[Depends(get_current_user)])
 async def get_requests(db: AsyncSession = Depends(get_db)):
-    stmt = select(GuestRequest).where(GuestRequest.created_at >= func.now() - text("interval '12 hours'")).order_by(GuestRequest.created_at.desc())
+    stmt = (
+        select(GuestRequest)
+        .options(joinedload(GuestRequest.user))
+        .where(GuestRequest.created_at >= func.now() - text("interval '12 hours'"))
+        .order_by(GuestRequest.created_at.desc())
+    )
     result = await db.execute(stmt)
-    requests = result.scalars().all()
+    requests = result.scalars().unique().all()
 
     return [
         GuestRequestResponseSchema(
@@ -61,7 +59,8 @@ async def get_requests(db: AsyncSession = Depends(get_db)):
             value=request.value,
             status=request.status,
             comment=request.comment,
-            created_at=request.created_at
+            created_at=request.created_at,
+            user=UserBase.model_validate(request.user, from_attributes=True)
         ) for request in requests
     ]
 
@@ -87,7 +86,6 @@ async def complete_request(request_id: int, request: Request, db: AsyncSession =
             msg_text = (
                 f"✅ **Ваш гість заїхав!**\n\n"
                 f"🚗 Авто: {request_obj.value}\n"
-                f"🕒 {request_obj.visit_date.strftime('%H:%M')}"
             )
 
             async with httpx.AsyncClient() as client:

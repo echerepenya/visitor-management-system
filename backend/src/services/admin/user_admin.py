@@ -31,7 +31,7 @@ class BaseUserAdmin(AuditMixin, ModelView):
         "apartment": {
             "fields": ["number"],
             "order_by": "id",
-            "limit": 20,
+            "limit": 30,
         }
     }
 

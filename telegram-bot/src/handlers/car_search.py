@@ -6,6 +6,7 @@ from aiogram.types import (
 )
 
 from src.config import API_URL, HEADERS
+from src.translations import REQUEST_TYPE_TRANSLATION
 
 router = Router()
 
@@ -55,14 +56,15 @@ async def handle_text_lookup(message: Message):
                     address = "Немає адреси"
 
                 phone = f"📞 `{info.get('phone')}`" if user_role == 'guard' else ''
+                owner = f"Власник: {info.get('owner')}`" if user_role == 'guard' else ''
 
                 # -- ВАРІАНТ 1: ЗНАЙДЕНО (Мешканець) --
                 if data["type"] != "guest":
                     res_text = (
                         f"🚙 **АВТО МЕШКАНЦЯ**\n\n"
                         f"Номер: `{data['plate']}`\n"
-                        f"Власник: {info.get('owner')}\n"
                         f"🏠 **{address}**\n"
+                        f"{owner}\n"
                         f"{phone}"
                     )
 
@@ -73,8 +75,9 @@ async def handle_text_lookup(message: Message):
                     guest_text = (
                         f"🚕 **ГІСТЬ (ЗАЯВКА)**\n\n"
                         f"Номер: `{data['plate']}`\n"
-                        f"Запросив: {info.get('invited_by')}\n"
+                        f"Тип заявки: `{REQUEST_TYPE_TRANSLATION.get(info.get('request_type'), 'Невідомий')}`\n"
                         f"🏠 **{address}**\n"
+                        f"{phone}"
                     )
 
                     await msg.edit_text(guest_text)

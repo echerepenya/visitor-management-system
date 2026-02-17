@@ -16,8 +16,9 @@ class CarCreate(CarBase):
 
 class CarResponse(CarBase):
     id: int
-    created_at: datetime
-    updated_at: Optional[datetime]
+
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
     class Config:
-        from_attributes = True  # Дозволяє читати дані з ORM моделі
+        from_attributes = True

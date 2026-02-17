@@ -7,7 +7,6 @@ from src.database import Base
 class RequestStatus(str, enum.Enum):
     NEW = "new"
     COMPLETED = "completed"
-    REJECTED = "rejected"
     EXPIRED = "expired"
 
 
@@ -23,7 +22,7 @@ class GuestRequest(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", name='fk_' + __tablename__ + '_user_id_users', ondelete="CASCADE"), nullable=False)
     user = relationship("User", back_populates="requests")
 
     type = Column(Enum(RequestType), default=RequestType.GUEST_CAR, nullable=False)
@@ -33,7 +32,7 @@ class GuestRequest(Base):
     status = Column(Enum(RequestStatus), default=RequestStatus.NEW, nullable=False)
 
     created_at = Column(DateTime, server_default=func.now())
-    visit_date = Column(DateTime, server_default=func.now())  # На коли чекають (зазвичай сьогодні)
+    updated_at = Column(DateTime, onupdate=func.now())
 
     def __repr__(self):
         return f"Request #{self.id} ({self.status})"

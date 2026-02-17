@@ -11,7 +11,7 @@ from src.models.car import Car
 from src.models.request import GuestRequest, RequestType, RequestStatus
 from src.models.user import User
 from src.routers.requests import CreateRequestSchema
-from src.schemas.user import UserProfileSchema
+from src.schemas.user import UserResponse
 from src.security import get_api_key
 from src.services.users import get_user_by_telegram_id
 from src.utils import normalize_plate, normalize_phone
@@ -62,7 +62,7 @@ async def telegram_login(data: TelegramLoginSchema, db: AsyncSession = Depends(g
     }
 
 
-@router.get("/user/{telegram_id}", response_model=UserProfileSchema, dependencies=[Depends(get_db)])
+@router.get("/user/{telegram_id}", response_model=UserResponse, dependencies=[Depends(get_db)])
 async def get_telegram_user(telegram_id: int, db: AsyncSession = Depends(get_db)):
     return await get_user_by_telegram_id(telegram_id, db)
 
@@ -113,9 +113,10 @@ async def check_car(plate: str, db: AsyncSession = Depends(get_db)):
         apt = request.user.apartment
         response_data["info"] = {
             "invited_by": request.user.full_name,
+            "phone": request.user.phone_number,
             "building": apt.building.address if apt else None,
             "apartment": apt.number if apt else None,
-            "comment": request.comment,
+            "request_type": request.type,
         }
         return response_data
 

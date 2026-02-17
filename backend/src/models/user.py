@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Enum, BigInteger, event
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Enum, BigInteger, event, DateTime, func
 from sqlalchemy.orm import relationship
 from src.database import Base
 from src.utils import normalize_phone
@@ -30,8 +30,11 @@ class User(Base):
     apartment_id = Column(Integer, ForeignKey("apartments.id"), nullable=True)
     apartment = relationship("Apartment", back_populates="residents", lazy="selectin")
 
-    cars = relationship("Car", back_populates="owner", cascade="all, delete-orphan")
-    requests = relationship("GuestRequest", back_populates="user")
+    cars = relationship("Car", back_populates="owner", cascade="all, delete-orphan", passive_deletes=True)
+    requests = relationship("GuestRequest", back_populates="user", cascade="all, delete-orphan", passive_deletes=True)
+
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), server_onupdate=func.now())
 
     def __repr__(self):
         return f"{self.phone_number} {'('+self.full_name+')' if self.full_name else self.apartment if self.apartment else ''}"

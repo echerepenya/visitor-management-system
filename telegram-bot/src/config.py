@@ -12,5 +12,8 @@ HEADERS = {
     "Content-Type": "application/json"
 }
 
+raw_phones = os.getenv("GUARD_CONTACT_PHONES", "112")
+GUARD_CONTACT_PHONES = [p.strip() for p in raw_phones.split(",")]
+
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger(__name__)

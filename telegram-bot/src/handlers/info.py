@@ -1,24 +1,33 @@
-import os
-
 import httpx
 from aiogram import Router, F
+from aiogram.enums import ParseMode
 from aiogram.types import (
     Message,
 )
 
-from src.config import HEADERS, API_URL
+from src.config import HEADERS, API_URL, GUARD_CONTACT_PHONES
 from src.translations import ROLE_TRANSLATION
 
 router = Router()
 
-GUARD_CONTACT_PHONE=os.getenv("GUARD_CONTACT_PHONE", 112)
-
 
 @router.message(F.text == "👮 Контакти охорони")
 async def cmd_contacts(message: Message):
+    phones_list = "\n".join([
+        f"📞 <a href='tel:{phone}'>{phone}</a>"
+        for phone in GUARD_CONTACT_PHONES
+    ])
+
+    text = (
+        "👮 <b>Пост охорони (цілодобово):</b>\n\n"
+        f"{phones_list}\n\n"
+        "<i>Натисніть на номер, щоб зателефонувати</i>"
+    )
+
     await message.answer(
-        "👮 **Пост охорони (цілодобово):**\n"
-        f"📞 {GUARD_CONTACT_PHONE}\n"
+        text,
+        parse_mode=ParseMode.HTML,
+        disable_web_page_preview=True
     )
 
 
@@ -53,7 +62,7 @@ async def cmd_me(message: Message):
 
             text = (
                 f"👤 **Ваш профіль:**\n"
-                f"━━━━━━━━━━━━━━━━\n"
+                f"\n"
                 f"🏷 **Роль:** {role_ua}\n"
                 f"📱 **Телефон:** {phone}\n"
                 f"👤 **Ім'я:** {full_name}\n"
@@ -66,6 +75,11 @@ async def cmd_me(message: Message):
             apt_num = data.get("apartment_number")
             if apt_num:
                 text += f"🏠 **Квартира:** {apt_num}\n"
+
+            cars_data = data.get('cars')
+            if cars_data:
+                cars = ', '.join([f"{car['model']} ({car['plate_number']})" for car in cars_data])
+                text += f"🚗 **Авто:** {cars}\n"
 
             await message.answer(text)
 
