@@ -223,7 +223,16 @@ const updateDate = () => {
 };
 
 const sortedRequests = computed(() => {
-  return [...requests.value].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  return [...requests.value].sort((a, b) => {
+    const weightA = a.status === 'new' ? 0 : 1;
+    const weightB = b.status === 'new' ? 0 : 1;
+
+    if (weightA !== weightB) {
+      return weightA - weightB;
+    }
+
+    return new Date(b.created_at) - new Date(a.created_at);
+  });
 });
 
 const fetchRequests = async () => {

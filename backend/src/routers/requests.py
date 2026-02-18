@@ -47,6 +47,7 @@ async def get_requests(db: AsyncSession = Depends(get_db)):
         select(GuestRequest)
         .options(joinedload(GuestRequest.user))
         .where(GuestRequest.created_at >= func.now() - text("interval '12 hours'"))
+        .where(GuestRequest.status != RequestStatus.EXPIRED)
         .order_by(GuestRequest.created_at.desc())
     )
     result = await db.execute(stmt)
