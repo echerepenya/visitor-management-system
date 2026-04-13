@@ -1,0 +1,95 @@
+services:
+  db:
+    container_name: vms-db
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+      - TZ=UTC
+      - PGTZ=UTC
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    networks:
+      - internal
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}" ]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  redis:
+    container_name: vms-redis
+    image: redis:7-alpine
+    restart: always
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis_data:/data
+    networks:
+      - internal
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  backend:
+    container_name: vms-backend
+    build: ./backend
+    restart: always
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000
+    environment:
+      - TZ=${TZ}
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - internal
+      - proxy_net
+
+  telegram-bot:
+    container_name: vms-bot
+    build: ./telegram-bot
+    restart: always
+    command: python src/main.py
+    env_file: .env
+    environment:
+      - PYTHONPATH=/app
+      - TZ=${TZ}
+    depends_on:
+      - backend
+    networks:
+      - internal
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        - VITE_API_URL=${VITE_API_URL}
+    container_name: vms-frontend
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      - backend
+    networks:
+      - internal
+      - proxy_net
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  internal:
+    driver: bridge
+
+  proxy_net:
+    external: true
