@@ -33,7 +33,7 @@ class User(Base):
     is_resident_contact = Column(Boolean, default=False, nullable=False)
 
     apartment_id = Column(Integer, ForeignKey("apartments.id"), nullable=True)
-    apartment = relationship("Apartment", back_populates="residents", lazy="selectin")
+    apartment = relationship("Apartment", back_populates="residents", lazy="selectin", enable_typechecks=False)
 
     cars = relationship("Car", back_populates="owner", cascade="all, delete-orphan", passive_deletes=True, foreign_keys="Car.owner_id")
     requests = relationship("GuestRequest", back_populates="user", cascade="all, delete-orphan", passive_deletes=True)

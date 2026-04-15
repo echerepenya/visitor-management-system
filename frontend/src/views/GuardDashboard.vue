@@ -159,11 +159,15 @@
 
       <div class="bg-white border-4 border-black p-6 md:p-8 max-w-md w-full shadow-[12px_12px_0px_0px_rgba(255,255,255,1)] relative my-8">
 
-        <button @click="selectedRequest = null" class="absolute top-2 right-2 text-3xl font-bold hover:text-red-600 px-2 leading-none">&times;</button>
+        <button @click="selectedRequest = null" :disabled="isSubmitting" class="absolute top-2 right-2 text-3xl font-bold hover:text-red-600 px-2 leading-none">&times;</button>
 
         <h2 class="text-2xl md:text-3xl font-black mb-6 uppercase border-b-4 border-yellow-300 inline-block">
           Пропустити?
         </h2>
+
+        <div v-if="errorMessage" class="mb-4 p-3 bg-red-100 border-2 border-red-600 text-red-700 font-bold text-sm animate-pulse">
+        ⚠️ {{ errorMessage }}
+        </div>
 
         <div class="bg-gray-100 p-4 border-2 border-black mb-6 text-center">
           <p class="text-xs text-gray-500 uppercase font-bold mb-1">Гість / Номер авто:</p>
@@ -208,12 +212,16 @@
 
         <div class="grid grid-cols-2 gap-4 mt-8">
           <button @click="selectedRequest = null"
-                  class="border-2 border-black py-4 font-black uppercase hover:bg-gray-200 transition-colors text-sm md:text-base">
-            Скасувати
+                  :disabled="isSubmitting"
+                  class="border-2 border-black py-4 font-black uppercase hover:bg-gray-200 transition-colors text-sm md:text-base disabled:opacity-50">
+            Назад
           </button>
+
           <button @click="closeRequest"
-                  class="bg-green-600 text-white border-2 border-black py-4 font-black uppercase hover:bg-green-700 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-none transition-all text-sm md:text-base">
-            Так, пропустив
+                  :disabled="isSubmitting"
+                  class="bg-green-600 text-white border-2 border-black py-4 font-black uppercase hover:bg-green-700 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-none transition-all text-sm md:text-base flex items-center justify-center disabled:opacity-70">
+            <span v-if="isSubmitting" class="mr-2 animate-spin">⏳</span>
+            {{ isSubmitting ? 'Обробка...' : 'Так, пропустив' }}
           </button>
         </div>
       </div>
@@ -286,17 +294,35 @@ const fetchRequests = async () => {
   }
 };
 
-const closeRequest = async () => {
-  if (!selectedRequest.value) return;
-  try {
-    await requestsApi.complete(selectedRequest.value.id);
+const isSubmitting = ref(false);
+const errorMessage = ref(null);
 
-    const req = requests.value.find(r => r.id === selectedRequest.value.id);
-    if (req) req.status = 'completed';
+const closeRequest = async () => {
+  if (!selectedRequest.value || isSubmitting.value) return;
+
+  isSubmitting.value = true;
+  errorMessage.value = null;
+
+  try {
+    const response = await requestsApi.complete(selectedRequest.value.id);
+    const updatedReq = response.data;
+    const index = requests.value.findIndex(r => r.id === updatedReq.id);
+
+    if (index !== -1) {
+      requests.value[index] = updatedReq;
+    }
+
     selectedRequest.value = null;
   } catch (e) {
-    alert("Помилка при закритті");
-  }
+      errorMessage.value = e.response?.data?.detail || "Помилка при закритті заявки";
+      console.error("API Error:", e);
+
+      if (e.response?.status === 400) {
+            setTimeout(() => fetchRequests(), 1500);
+      }
+    } finally {
+      isSubmitting.value = false;
+    }
 };
 
 const openConfirm = (req) => {

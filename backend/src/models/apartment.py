@@ -15,7 +15,7 @@ class Apartment(Base):
     building_id = Column(Integer, ForeignKey("buildings.id"), nullable=False)
     building = relationship("Building", back_populates="apartments", lazy="selectin")
 
-    residents = relationship("User", back_populates="apartment")
+    residents = relationship("User", back_populates="apartment", enable_typechecks=False)
 
     def __str__(self):
         if "building" in self.__dict__ and self.building:

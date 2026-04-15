@@ -64,7 +64,7 @@ async def pass_value_chosen(message: Message, state: FSMContext):
         "telegram_id": message.from_user.id,
         "type": data['pass_type_code'],
         "value": value,
-        "comment": "Створено через Telegram"
+        "comment": "Створено через бот"
     }
 
     try:

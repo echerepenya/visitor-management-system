@@ -1,12 +1,11 @@
 import json
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, text
 from sqlalchemy.orm import joinedload
 from pydantic import BaseModel
 from typing import Optional
-from fastapi.security import OAuth2PasswordRequestForm
 from redis.asyncio import Redis
 
 from src.database import get_db, get_redis
@@ -97,4 +96,4 @@ async def complete_request(
         'new_status': RequestStatus.COMPLETED.value
     })
 
-    return {"ok": True}
+    return request_obj

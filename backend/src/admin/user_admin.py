@@ -40,6 +40,18 @@ class BaseUserAdmin(AuditMixin, ModelView):
         "address_info": "Адреса"
     }
 
+    form_args = {
+        "apartment": {
+            "label": "Квартира (Пошук)",
+            "validators": [validators.Optional()],
+            "render_kw": {
+                "data-allow-clear": "true",
+                "data-placeholder": "Оберіть квартиру...",
+                "style": "width: 100%"
+            }
+        }
+    }
+
     form_ajax_refs = {
         "apartment": {
             "fields": ["number"],
@@ -209,7 +221,13 @@ class SuperUserAdmin(BaseUserAdmin, model=User):
             "render_kw": {"required": False},
         },
         "apartment": {
-            "label": "Квартира (Пошук)"
+            "label": "Квартира (Пошук)",
+            "validators": [validators.Optional()],
+            "render_kw": {
+                "data-allow-clear": "true",
+                "data-placeholder": "Оберіть квартиру...",
+                "style": "width: 100%"
+            }
         }
     }
 
