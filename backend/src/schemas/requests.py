@@ -14,6 +14,7 @@ class GuestRequestResponseSchema(BaseModel):
     status: RequestStatus
     comment: Optional[str] = None
     created_at: datetime
+    updated_at: Optional[datetime] = None
     user: UserBase
 
     class Config:

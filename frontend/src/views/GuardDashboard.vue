@@ -49,7 +49,9 @@
                    class="py-1 px-2 border border-black text-[10px] font-black uppercase shadow-[1px_1px_0px_0px_rgba(0,0,0,0.2)]">
                 {{ translateType(req.type) }}
              </span>
-             <span class="text-xs font-bold text-gray-400">{{ formatTime(req.created_at) }}</span>
+             <span class="text-xs font-bold text-gray-400">
+              {{ req.status === 'completed' ? 'Завершено: ' + formatTime(req.updated_at) : formatTime(req.created_at) }}
+            </span>
           </div>
 
           <div class="text-xl font-black uppercase tracking-wide mb-2"
@@ -125,8 +127,23 @@
               </td>
 
               <td class="py-4 px-6 border-r-2 border-gray-100 transition-colors text-right">
-                <div class="text-xl font-mono font-bold">{{ formatTime(req.created_at) }}</div>
-                <div class="text-xs uppercase font-bold opacity-60">{{ formatDate(req.created_at) }}</div>
+                <template v-if="req.status === 'completed' && req.updated_at">
+                  <div class="text-xl font-mono font-bold text-green-700">
+                    {{ formatTime(req.updated_at) }}
+                  </div>
+                  <div class="text-[10px] uppercase font-black opacity-60">
+                    Пропущено: {{ formatDate(req.updated_at) }}
+                  </div>
+                </template>
+
+                <template v-else>
+                  <div class="text-xl font-mono font-bold">
+                    {{ formatTime(req.created_at) }}
+                  </div>
+                  <div class="text-[10px] uppercase font-black opacity-60">
+                    Створено: {{ formatDate(req.created_at) }}
+                  </div>
+                </template>
               </td>
 
               <td class="py-4 px-6 text-center">

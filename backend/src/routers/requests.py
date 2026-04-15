@@ -46,6 +46,7 @@ async def get_requests(db: AsyncSession = Depends(get_db)):
             status=request.status,
             comment=request.comment,
             created_at=request.created_at,
+            updated_at=request.updated_at,
             user=UserBase.model_validate(request.user, from_attributes=True)
         ) for request in requests
     ]
@@ -75,6 +76,7 @@ async def complete_request(
         raise HTTPException(status_code=400, detail="Ця заявка вже не активна")
 
     request_obj.status = RequestStatus.COMPLETED
+
     await db.commit()
 
     if request_obj.user and request_obj.user.telegram_id:
