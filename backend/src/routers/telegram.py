@@ -81,11 +81,17 @@ class TelegramRequestSchema(BaseModel):
 @router.post("/get-me", response_model=UserResponse)
 async def get_telegram_user(payload: TelegramRequestSchema, db: AsyncSession = Depends(get_db)):
     if not payload.telegram_id:
-        return None
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Telegram ID is required"
+        )
 
     user = await get_user_by_telegram_id(payload.telegram_id, db)
     if not user:
-        return None
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
 
     await log_user_activity(db, user.id, "get_user_info")
     return user

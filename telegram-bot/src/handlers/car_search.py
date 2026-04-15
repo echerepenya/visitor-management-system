@@ -34,6 +34,10 @@ async def handle_text_lookup(message: Message, state: FSMContext):
             # run "smart" search in cars table and in GuestRequests
             resp = await client.post(f"{API_URL}/telegram/car-search/{quote(text)}", headers=HEADERS, json={"telegram_id": message.from_user.id}, timeout=5.0)
 
+            if resp.status_code == 422:
+                await message.answer("Це не схоже на номер авто. Спробуйте ще раз.")
+                return
+
             if resp.status_code != 200:
                 await msg.edit_text("⚠️ Помилка сервера при пошуку.")
                 return
