@@ -1,8 +1,9 @@
 import json
+from datetime import timedelta, datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, text
+from sqlalchemy import select, or_, and_
 from sqlalchemy.orm import joinedload
 from pydantic import BaseModel
 from typing import Optional
@@ -28,11 +29,24 @@ class CreateRequestSchema(BaseModel):
 
 @router.get("/", response_model=list[GuestRequestResponseSchema], dependencies=[Depends(get_current_user)])
 async def get_requests(db: AsyncSession = Depends(get_db)):
+    eight_hours_ago = datetime.now(timezone.utc) - timedelta(hours=8)
+    three_hours_ago = datetime.now(timezone.utc) - timedelta(hours=3)
+
     stmt = (
         select(GuestRequest)
         .options(joinedload(GuestRequest.user))
-        .where(GuestRequest.created_at >= func.now() - text("interval '12 hours'"))
-        .where(GuestRequest.status != RequestStatus.EXPIRED)
+        .where(
+            or_(
+                and_(
+                    GuestRequest.status == RequestStatus.NEW,
+                    GuestRequest.created_at >= eight_hours_ago
+                ),
+                and_(
+                    GuestRequest.status == RequestStatus.COMPLETED,
+                    GuestRequest.updated_at >= three_hours_ago
+                )
+            )
+        )
         .order_by(GuestRequest.created_at.desc())
     )
     result = await db.execute(stmt)
