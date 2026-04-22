@@ -4,6 +4,8 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
+    TZ: str
+
     DB_USER: str
     DB_PASSWORD: str
     DB_NAME: str

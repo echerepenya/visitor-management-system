@@ -23,13 +23,16 @@ class GuestRequest(Base):
     id = Column(Integer, primary_key=True, index=True)
 
     user_id = Column(Integer, ForeignKey("users.id", name='fk_' + __tablename__ + '_user_id_users', ondelete="CASCADE"), nullable=False)
-    user = relationship("User", back_populates="requests")
+    user = relationship("User", back_populates="requests", foreign_keys="GuestRequest.user_id")
 
     type = Column(Enum(RequestType), default=RequestType.GUEST_CAR, nullable=False)
     value = Column(String(100), nullable=True)  # "AA0000AA" or "Glovo delivery"
     comment = Column(Text, nullable=True)
 
     status = Column(Enum(RequestStatus), default=RequestStatus.NEW, nullable=False)
+
+    completed_by = Column(Integer, ForeignKey("users.id", name='fk_' + __tablename__ + '_completed_by_users', ondelete="SET NULL"))
+    completed_by_user = relationship("User", foreign_keys="GuestRequest.completed_by")
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

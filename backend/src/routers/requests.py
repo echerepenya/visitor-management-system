@@ -90,6 +90,7 @@ async def complete_request(
         raise HTTPException(status_code=400, detail="Ця заявка вже не активна")
 
     request_obj.status = RequestStatus.COMPLETED
+    request_obj.completed_by = current_user.id
 
     await db.commit()
 
