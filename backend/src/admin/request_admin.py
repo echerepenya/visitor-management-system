@@ -1,9 +1,9 @@
 from sqladmin import ModelView
-from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from starlette.requests import Request
 from markupsafe import Markup
 
+from src.helpers.date import datetime_formatter
 from src.models.apartment import Apartment
 from src.models.request import GuestRequest, RequestStatus
 from src.models.user import User
@@ -33,10 +33,6 @@ def address_formatter(m, _):
     return f"{m.user.apartment.building.address}, кв. {m.user.apartment.number}"
 
 
-def datetime_formatter(value):
-    return value.strftime("%Y-%m-%d %H:%M") if value else ''
-
-
 def request_type_formatter(value: str) -> str:
     return REQUEST_TYPE_TRANSLATION.get(value, value)
 
@@ -61,7 +57,8 @@ class RequestAdmin(AuditMixin, ModelView, model=GuestRequest):
         "address_info",
         "user.phone_number",
         GuestRequest.status,
-        "request_updated_at"
+        "request_updated_at",
+        "completed_by_user.full_name"
     ]
 
     column_labels = {
@@ -71,7 +68,8 @@ class RequestAdmin(AuditMixin, ModelView, model=GuestRequest):
         "address_info": "Адреса",
         "user.phone_number": "Телефон",
         "status": "Статус",
-        "request_updated_at": "Оновлено"
+        "request_updated_at": "Оновлено",
+        "completed_by_user.full_name": "Пропустив"
     }
 
     column_searchable_list = [

@@ -1,6 +1,7 @@
 from sqladmin import ModelView
 from starlette.requests import Request
 
+from src.helpers.date import datetime_formatter
 from src.models.audit_log import AuditLog
 
 
@@ -21,6 +22,10 @@ class AuditLogAdmin(ModelView, model=AuditLog):
     page_size_options = [50, 100, 200]
 
     column_default_sort = ("created_at", True)
+
+    column_formatters = {
+        "created_at": lambda m, a: datetime_formatter(m.created_at)
+    }
 
     def is_accessible(self, request: Request) -> bool:
         return request.session.get('user', {}).get("is_superadmin")
