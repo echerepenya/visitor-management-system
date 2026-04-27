@@ -133,6 +133,7 @@ async def check_car(
         apt = car.owner.apartment
         response_data["info"] = {
             "owner": car.owner.full_name,
+            "owner_telegram_id": car.owner.telegram_id,
             "phone": car.owner.phone_number,
             "building": apt.building.address if apt else None,
             "apartment": apt.number if apt else None

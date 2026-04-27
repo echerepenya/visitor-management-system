@@ -1,3 +1,8 @@
+from aiogram.filters.callback_data import CallbackData
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.types import CallbackQuery
+
+
 from aiogram.types import (
     ReplyKeyboardMarkup,
     KeyboardButton, WebAppInfo, InlineKeyboardMarkup, InlineKeyboardButton,
@@ -55,3 +60,32 @@ kb_guard_dashboard = InlineKeyboardMarkup(
     ],
     resize_keyboard=True
 )
+
+
+# CAR_MESSAGE keyboards
+class ContactOwnerCB(CallbackData, prefix="contact_owner"):
+    target_id: int
+    plate: str
+
+
+class SendMsgCB(CallbackData, prefix="send_msg"):
+    msg_type: str
+    target_id: int
+    plate: str
+
+
+class CancelCB(CallbackData, prefix="cancel_msg"):
+    target_id: int
+    plate: str
+
+
+class ReplySenderCB(CallbackData, prefix="reply_sender"):
+    sender_id: int
+    plate: str
+
+
+MESSAGES_MAP = {
+    "block": "⚠️ **Увага!** Ваше авто ({plate}) заважає виїхати. Будь ласка, підійдіть до машини.",
+    "come": "🚶 Будь ласка, підійдіть до вашого авто ({plate}).",
+    "praise": "👍 Сусід передає, що ваше авто ({plate}) дуже круто запарковане! Дякуємо за повагу до інших."
+}
