@@ -77,7 +77,7 @@ async def handle_text_lookup(message: Message, state: FSMContext):
                     target_tg_id = info.get("owner_telegram_id")
                     reply_markup = None
 
-                    if target_tg_id and target_tg_id != message.from_user.id:
+                    if target_tg_id and target_tg_id != message.from_user.id and user_data.get("role") != 'guard':
                         builder = InlineKeyboardBuilder()
                         builder.button(
                             text="💬 Надіслати повідомлення власнику",
