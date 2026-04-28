@@ -1,6 +1,4 @@
 from aiogram.filters.callback_data import CallbackData
-from aiogram.utils.keyboard import InlineKeyboardBuilder
-from aiogram.types import CallbackQuery
 
 
 from aiogram.types import (
@@ -8,7 +6,7 @@ from aiogram.types import (
     KeyboardButton, WebAppInfo, InlineKeyboardMarkup, InlineKeyboardButton,
 )
 
-from src.config import GUARD_DASHBOARD_URL
+from src.config import settings
 
 # 1. Auth Button
 kb_auth = ReplyKeyboardMarkup(
@@ -47,7 +45,7 @@ kb_cancel = ReplyKeyboardMarkup(
 )
 
 # 5. Guard menu
-login_url = f"{GUARD_DASHBOARD_URL}/login/"
+login_url = f"{settings.GUARD_DASHBOARD_URL}/login/"
 
 kb_guard_dashboard = InlineKeyboardMarkup(
     inline_keyboard=[

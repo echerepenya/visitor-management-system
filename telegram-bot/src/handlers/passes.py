@@ -1,3 +1,5 @@
+import logging
+
 import httpx
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
@@ -5,11 +7,13 @@ from aiogram.types import (
     Message,
 )
 
-from src.config import HEADERS, API_URL
+from src.config import settings
 from src.keyboards import kb_pass_types, kb_main, kb_cancel
 from src.states import PassState
 
 router = Router()
+
+logger = logging.getLogger(__name__)
 
 
 @router.message(F.text == "🎫 Замовити перепустку")
@@ -69,7 +73,8 @@ async def pass_value_chosen(message: Message, state: FSMContext):
 
     try:
         async with httpx.AsyncClient() as client:
-            resp = await client.post(f"{API_URL}/telegram/create-request", json=payload, headers=HEADERS, timeout=10.0)
+            logger.info(f"Creating new pass request ({data['pass_type_code']}) for customer {message.from_user.id}")
+            resp = await client.post(f"{settings.API_URL}/telegram/create-request", json=payload, headers=settings.HEADERS, timeout=10.0)
 
             if resp.status_code == 201:
                 await message.answer(
@@ -80,11 +85,14 @@ async def pass_value_chosen(message: Message, state: FSMContext):
                     reply_markup=kb_main
                 )
             elif resp.status_code == 404:
+                logger.info("Помилка авторизації")
                 await message.answer("❌ Помилка авторизації. Натисніть /start", reply_markup=kb_main)
             else:
+                logger.info(f"Помилка: {resp.text}")
                 await message.answer(f"⚠️ Помилка: {resp.text}", reply_markup=kb_main)
 
     except Exception as e:
+        logger.info(f"Помилка з'єднання: {e}")
         await message.answer(f"⚠️ Помилка з'єднання: {e}", reply_markup=kb_main)
 
     await state.clear()

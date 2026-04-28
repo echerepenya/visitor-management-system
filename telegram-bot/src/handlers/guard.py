@@ -6,6 +6,8 @@ from src.config import HEADERS, API_URL
 
 router = Router()
 
+logger = logging.getLogger(__name__)
+
 
 @router.message(F.text == "📊 Заявки на пропуск")
 async def cmd_orders_count(message: Message):
@@ -16,7 +18,7 @@ async def cmd_orders_count(message: Message):
             if response.status_code == 200:
                 count = response.json().get("count", 0)
     except Exception as e:
-        logging.error(f"Error fetching new pass requests: {e}")
+        logger.error(f"Error fetching new pass requests: {e}")
 
     await message.answer(
         f"📊 **Нових заявок: {count}**\n\n"

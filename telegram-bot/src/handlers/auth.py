@@ -11,10 +11,12 @@ from aiogram.types import (
     ReplyKeyboardRemove,
 )
 
-from src.config import HEADERS, API_URL, LIVING_COMPLEX_NAME
+from src.config import settings
 from src.keyboards import kb_auth, kb_main, kb_guard_dashboard
 
 router = Router()
+
+logger = logging.getLogger(__name__)
 
 
 # /start
@@ -32,7 +34,7 @@ async def cmd_start(message: Message, state: FSMContext):
         "Натискаючи кнопку «Надіслати номер телефону», ви надаєте згоду на обробку "
         "ваших персональних даних (телефон, ПІБ, адреса, авто) для забезпечення пропускного режиму.\n"
         "\n"
-        f"Дані зберігаються у ініціативної групи ЖК {LIVING_COMPLEX_NAME}, надаються в користування охоронній компанії "
+        f"Дані зберігаються у ініціативної групи ЖК {settings.LIVING_COMPLEX_NAME}, надаються в користування охоронній компанії "
         "і можуть бути видалені по вашому запиту.\n",
         reply_markup=kb_auth
     )
@@ -65,7 +67,7 @@ async def handle_contact(message: Message, state: FSMContext):
 
     async with httpx.AsyncClient() as client:
         try:
-            response = await client.post(f"{API_URL}/telegram/login", json=payload, headers=HEADERS, timeout=10.0)
+            response = await client.post(f"{settings.API_URL}/telegram/login", json=payload, headers=settings.HEADERS, timeout=10.0)
 
             if response.status_code == 200:
                 data = response.json()
@@ -106,11 +108,11 @@ async def handle_contact(message: Message, state: FSMContext):
                     reply_markup=ReplyKeyboardRemove()
                 )
             else:
-                logging.error(f"Login error for {message.from_user.id}: {response.status_code} {response.text}")
+                logger.error(f"Login error for {message.from_user.id}: {response.status_code} {response.text}")
                 await message.answer("⚠️ Помилка сервера. Спробуйте пізніше.")
 
         except httpx.RequestError as e:
-            logging.error(f"Connection error for {message.from_user.id}: {e}")
+            logger.error(f"Connection error for {message.from_user.id}: {e}")
             await message.answer("⚠️ Помилка з'єднання. Спробуйте пізніше.")
 
 

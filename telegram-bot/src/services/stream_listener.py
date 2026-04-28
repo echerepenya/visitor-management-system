@@ -6,13 +6,14 @@ from aiogram.fsm.storage.redis import RedisStorage
 from redis.asyncio import Redis
 from redis.exceptions import ResponseError
 
-from src.config import REDIS_CONSUMER_NAME
+from src.config import settings
 from src.handlers.auth import force_logout_user
 from src.handlers.notify import notify_guards, notify_resident_closed, notify_resident_expired
 
 STREAM_NAME = "vms_stream"
 GROUP_NAME = "bot_workers"
 
+logger = logging.getLogger(__name__)
 
 handlers = {
     "new_guest_request": notify_guards,
@@ -27,7 +28,7 @@ async def handle_event(bot, data, storage):
     handler = handlers.get(event)
 
     if not handler:
-        logging.warning(f"Невідомий тип події: {event}")
+        logger.warning(f"Невідомий тип події: {event}")
         return
 
     await handler(bot, data, storage)
@@ -39,12 +40,12 @@ async def listen_redis_stream(bot: Bot, redis: Redis, storage: RedisStorage):
     except ResponseError as e:
         if "BUSYGROUP" not in str(e): raise
 
-    logging.info(f"🎧 Bot is listening to Redis Stream: {STREAM_NAME}")
+    logger.info(f"🎧 Bot is listening to Redis Stream: {STREAM_NAME}")
 
     while True:
         try:
             messages = await redis.xreadgroup(
-                GROUP_NAME, REDIS_CONSUMER_NAME, {STREAM_NAME: ">"}, count=10, block=2000
+                GROUP_NAME, settings.REDIS_CONSUMER_NAME, {STREAM_NAME: ">"}, count=10, block=2000
             )
 
             for stream_name, msg_list in messages:
@@ -58,5 +59,5 @@ async def listen_redis_stream(bot: Bot, redis: Redis, storage: RedisStorage):
                     await redis.xack(STREAM_NAME, GROUP_NAME, msg_id)
 
         except Exception as e:
-            logging.error(f"Помилка читання Redis Stream: {e}")
+            logger.error(f"Помилка читання Redis Stream: {e}")
             await asyncio.sleep(5)

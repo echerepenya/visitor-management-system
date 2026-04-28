@@ -2,3 +2,4 @@ aiogram>=3.26
 httpx
 python-dotenv
 redis>=5.0.0
+pydantic-settings>=2.1.0

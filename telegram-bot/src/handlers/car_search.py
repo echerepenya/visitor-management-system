@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from urllib.parse import quote
 from zoneinfo import ZoneInfo
@@ -12,11 +13,13 @@ from aiogram.types import (
 )
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from src.config import API_URL, HEADERS, logger, TIMEZONE
+from src.config import settings
 from src.keyboards import ContactOwnerCB, ReplySenderCB, SendMsgCB, MESSAGES_MAP, CancelCB
 from src.translations import REQUEST_TYPE_TRANSLATION
 
 router = Router()
+
+logger = logging.getLogger(__name__)
 
 
 @router.message(StateFilter(None))
@@ -35,7 +38,8 @@ async def handle_text_lookup(message: Message, state: FSMContext):
     try:
         async with httpx.AsyncClient() as client:
             # run "smart" search in cars table and in GuestRequests
-            resp = await client.post(f"{API_URL}/telegram/car-search/{quote(text)}", headers=HEADERS, json={"telegram_id": message.from_user.id}, timeout=5.0)
+            logger.info(f"Executing car search: {text} for the customer {message.from_user.id}")
+            resp = await client.post(f"{settings.API_URL}/telegram/car-search/{quote(text)}", headers=settings.HEADERS, json={"telegram_id": message.from_user.id}, timeout=5.0)
 
             if resp.status_code == 422:
                 await message.answer("Це не схоже на номер авто. Спробуйте ще раз.")
@@ -48,6 +52,8 @@ async def handle_text_lookup(message: Message, state: FSMContext):
             data = resp.json()
 
             if data.get("found"):
+                logger.info(f"The car {text} was found")
+
                 user_data = await state.get_data()
                 is_detailed_info_allowed = user_data.get("role", "resident") == "guard" or user_data.get("is_admin", False)
 
@@ -92,7 +98,7 @@ async def handle_text_lookup(message: Message, state: FSMContext):
                     invited_at_raw = info.get('invited_at')
                     if invited_at_raw:
                         dt = datetime.fromisoformat(invited_at_raw)
-                        local_dt = dt.astimezone(ZoneInfo(TIMEZONE))
+                        local_dt = dt.astimezone(ZoneInfo(settings.TZ))
 
                         invited_at = local_dt.strftime("%d.%m.%Y %H:%M")
                     else:

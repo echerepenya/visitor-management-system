@@ -1,28 +1,17 @@
+import logging
+
 from aiogram import Bot
 from aiogram.fsm.storage.redis import RedisStorage
 
-from src.config import logger, GUARD_DASHBOARD_URL
 from src.keyboards import kb_guard_dashboard
-from src.translations import REQUEST_TYPE_TRANSLATION
+
+logger = logging.getLogger(__name__)
 
 
 async def notify_guards(bot: Bot, data: dict, storage: RedisStorage):
     guard_ids = data.get("guard_telegram_ids", [])
     if not guard_ids:
         return
-
-    """
-    request_type = REQUEST_TYPE_TRANSLATION.get(data["type"], 'Невідомо')
-    text = (
-        f"🆕 НОВА ЗАЯВКА!\n\n"
-        f"Мешканець: {data['author_name']}\n"
-        f"Номер телефону: {data['author_phone']}\n"
-        f"Адреса: {data['author_address']}\n\n"
-        f"Гість/Авто: {request_type} - {data['value']}\n"
-    )
-    if data.get("comment"):
-        text += f"Коментар: {data['comment']}"
-    """
 
     text = "🆕 Створено нову заявку!\n"
 
