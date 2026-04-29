@@ -10,6 +10,7 @@ from redis.asyncio import Redis
 
 from src.config import settings
 from src.handlers import auth, passes, car_search, info
+from src.logging_config import setup_logging
 from src.services.stream_listener import listen_redis_stream
 
 logger = logging.getLogger(__name__)
@@ -46,6 +47,7 @@ async def main():
 
 if __name__ == "__main__":
     try:
+        setup_logging()
         asyncio.run(main())
     except KeyboardInterrupt:
         logger.info("Bot stopped!")

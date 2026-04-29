@@ -23,6 +23,8 @@ from src.services.users import get_user_by_telegram_id, get_resident_contact_gua
 from src.services.websocket_manager import manager
 from src.utils import normalize_plate, normalize_phone
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api/telegram", tags=["Telegram"], dependencies=[Depends(get_api_key)])
 
 
@@ -54,7 +56,7 @@ async def telegram_login(data: TelegramLoginSchema, db: AsyncSession = Depends(g
         user.telegram_id = data.telegram_id
         user.first_telegram_login_at = datetime.datetime.now(datetime.UTC)
     elif user.telegram_id != data.telegram_id:
-        logging.warning(f"Telegram ID reassignment attempt for user {user.id}")
+        logger.warning(f"Telegram ID reassignment attempt for user {user.id}")
 
     if data.first_name and user.full_name is None:
         user.full_name = data.first_name

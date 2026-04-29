@@ -3,8 +3,6 @@ from typing import Optional
 from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from src.logging_config import setup_logging
-
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -36,10 +34,6 @@ class Settings(BaseSettings):
     def REDIS_CONSUMER_NAME(self) -> str:
         hostname = socket.gethostname()
         return f"bot_consumer_{hostname}"
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        setup_logging()
 
 
 settings = Settings()

@@ -1,7 +1,10 @@
 import logging.config
+import os
 
 
 def setup_logging():
+    os.makedirs("logs", exist_ok=True)
+
     logging_config = {
         "version": 1,
         "disable_existing_loggers": False,
@@ -17,14 +20,22 @@ def setup_logging():
                 "formatter": "standard",
                 "stream": "ext://sys.stdout",
             },
+            "file": {
+                "class": "logging.handlers.RotatingFileHandler",
+                "formatter": "standard",
+                "filename": "logs/app.log",
+                "maxBytes": 10 * 1024 * 1024,
+                "backupCount": 5,
+                "encoding": "utf-8",
+            },
         },
         "loggers": {
             "": {
-                "handlers": ["console"],
+                "handlers": ["console", "file"],
                 "level": "INFO",
                 "propagate": True
             },
-            "aiogram": {"level": "WARNING"},
+            "aiogram": {"level": "INFO"},
             "httpx": {"level": "WARNING"},
             "uvicorn": {"level": "INFO"},
             "uvicorn.access": {"level": "INFO"},
