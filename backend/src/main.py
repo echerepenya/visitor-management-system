@@ -10,6 +10,7 @@ from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from src.config import settings
 from src.database import engine, AsyncSessionLocal, init_redis, close_redis, DbSessionMiddleware
+from src.logging_config import setup_logging
 from src.routers import auth, requests, telegram, import_data
 from src.models.user import User, UserRole
 from src.scheduler import start_scheduler, scheduler
@@ -55,6 +56,7 @@ async def lifespan(app: FastAPI):
     await close_redis()
 
 
+setup_logging()
 app = FastAPI(title="VMS API", root_path="", lifespan=lifespan)
 
 app.add_middleware(

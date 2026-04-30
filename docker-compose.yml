@@ -41,6 +41,8 @@ services:
     container_name: vms-backend
     build: ./backend
     restart: always
+    volumes:
+      - ./logs/backend:/app/logs
     command: uvicorn src.main:app --host 0.0.0.0 --port 8000
     environment:
       - TZ=${TZ}
@@ -53,11 +55,18 @@ services:
     networks:
       - internal
       - proxy_net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   telegram-bot:
     container_name: vms-bot
     build: ./telegram-bot
     restart: always
+    volumes:
+      - ./logs/bot:/app/logs
     command: python src/main.py
     env_file: .env
     environment:
@@ -67,6 +76,11 @@ services:
       - backend
     networks:
       - internal
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   frontend:
     build:

@@ -11,6 +11,8 @@ from src.services.websocket_manager import manager
 
 PASS_REQUEST_EXPIRATION_HOURS: int = 8
 
+logger = logging.getLogger(__name__)
+
 
 async def check_expired_requests():
     redis = await get_redis()
@@ -51,4 +53,4 @@ async def check_expired_requests():
                 'new_status': RequestStatus.EXPIRED.value
             })
 
-            logging.info(f"⏰ Оновлено {len(expired_requests)} заявок у статус expired")
+            logger.info(f"Оновлено {len(expired_requests)} заявок у статус expired")

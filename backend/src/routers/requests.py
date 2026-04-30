@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import timedelta, datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -16,6 +17,8 @@ from src.schemas.requests import GuestRequestResponseSchema
 from src.schemas.user import UserBase
 from src.security import get_current_user
 from src.services.websocket_manager import manager
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/requests", tags=["Guest Requests"])
 
@@ -74,6 +77,7 @@ async def complete_request(
         current_user: User = Depends(get_current_user)
 ):
     if current_user.role != UserRole.GUARD:
+        logger.info(f"User {current_user.id} failed to complete pass request because of insufficient permissions")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Недостатньо прав для закриття заявки")
 
     result = await db.execute(
@@ -87,6 +91,7 @@ async def complete_request(
         raise HTTPException(status_code=404, detail="Заявку не знайдено")
 
     if request_obj.status != RequestStatus.NEW:
+        logger.info(f"User {current_user.id} failed to complete pass request {request_obj.id} because it is not new")
         raise HTTPException(status_code=400, detail="Ця заявка вже не активна")
 
     request_obj.status = RequestStatus.COMPLETED
@@ -112,5 +117,7 @@ async def complete_request(
         'request_id': request_id,
         'new_status': RequestStatus.COMPLETED.value
     })
+
+    logger.info(f"Pass request {request_obj.id} was completed by {current_user.full_name} (ID: {current_user.id})")
 
     return request_obj

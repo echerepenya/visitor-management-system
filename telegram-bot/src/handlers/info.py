@@ -5,7 +5,7 @@ from aiogram.types import (
     Message,
 )
 
-from src.config import HEADERS, API_URL
+from src.config import settings
 from src.translations import ROLE_TRANSLATION
 
 router = Router()
@@ -13,13 +13,13 @@ router = Router()
 
 @router.message(F.text == "👮 Контакти охорони")
 async def cmd_contacts(message: Message):
-    url = f"{API_URL}/telegram/resident-contact-guards"
+    url = f"{settings.API_URL}/telegram/resident-contact-guards"
 
     async with httpx.AsyncClient() as client:
         try:
             response = await client.post(
                 url,
-                headers=HEADERS,
+                headers=settings.HEADERS,
                 json={"telegram_id": message.from_user.id},
                 timeout=5.0
             )
@@ -62,13 +62,13 @@ async def cmd_contacts(message: Message):
 async def cmd_me(message: Message):
     telegram_id = message.from_user.id
 
-    url = f"{API_URL}/telegram/get-me"
+    url = f"{settings.API_URL}/telegram/get-me"
 
     async with httpx.AsyncClient() as client:
         try:
             response = await client.post(
                 url,
-                headers=HEADERS,
+                headers=settings.HEADERS,
                 json={"telegram_id": telegram_id},
                 timeout=5.0
             )

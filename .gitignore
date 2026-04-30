@@ -2,3 +2,5 @@
 .idea
 *.sql
 *.gz
+backend/logs
+telegram-bot/logs

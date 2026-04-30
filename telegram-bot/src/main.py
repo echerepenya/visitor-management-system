@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
@@ -7,16 +8,19 @@ from aiogram.fsm.storage.redis import RedisStorage
 
 from redis.asyncio import Redis
 
-from src.config import BOT_TOKEN, logger, REDIS_URL
+from src.config import settings
 from src.handlers import auth, passes, car_search, info
+from src.logging_config import setup_logging
 from src.services.stream_listener import listen_redis_stream
+
+logger = logging.getLogger(__name__)
 
 
 async def main():
-    redis_client = Redis.from_url(REDIS_URL, decode_responses=True)
+    redis_client = Redis.from_url(settings.REDIS_URL, decode_responses=True)
     redis_storage = RedisStorage(redis=redis_client)
 
-    bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.MARKDOWN))
+    bot = Bot(token=settings.BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.MARKDOWN))
     dp = Dispatcher(storage=redis_storage)
 
     dp["redis"] = redis_client
@@ -43,6 +47,7 @@ async def main():
 
 if __name__ == "__main__":
     try:
+        setup_logging()
         asyncio.run(main())
     except KeyboardInterrupt:
         logger.info("Bot stopped!")
