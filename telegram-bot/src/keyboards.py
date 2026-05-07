@@ -60,6 +60,11 @@ kb_guard_dashboard = InlineKeyboardMarkup(
 )
 
 
+# Car search keyboards
+class SelectCarCB(CallbackData, prefix="sel_car"):
+    plate: str
+
+
 # CAR_MESSAGE keyboards
 class ContactOwnerCB(CallbackData, prefix="contact_owner"):
     target_id: int
