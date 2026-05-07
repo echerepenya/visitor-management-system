@@ -1,9 +1,12 @@
+import asyncio
 import logging
+import time
 from datetime import datetime
 from urllib.parse import quote
 from zoneinfo import ZoneInfo
 
 import httpx
+from aiogram.exceptions import TelegramBadRequest
 from redis.asyncio import Redis
 from aiogram import Router, Bot
 from aiogram.filters import StateFilter
@@ -21,6 +24,21 @@ router = Router()
 
 logger = logging.getLogger(__name__)
 
+CAR_MESSAGE_KEYBOARD_EXPIRATION_SECONDS = 300
+
+
+async def remove_expired_keyboard(bot: Bot, chat_id: int, message_id: int, keyboard_lifetime_seconds: int) -> None:
+    await asyncio.sleep(keyboard_lifetime_seconds)
+    try:
+        await bot.edit_message_reply_markup(chat_id=chat_id, message_id=message_id, reply_markup=None)
+    except TelegramBadRequest as e:
+        if "message is not modified" in str(e) or "message to edit not found" in str(e):
+            pass
+        else:
+            logger.warning(f"Не вдалося прибрати клавіатуру (TelegramBadRequest): {e}")
+    except Exception as e:
+        logger.error(f"Неочікувана помилка при видаленні клавіатури: {e}")
+
 
 @router.message(StateFilter(None))
 async def handle_text_lookup(message: Message, state: FSMContext):
@@ -32,6 +50,24 @@ async def handle_text_lookup(message: Message, state: FSMContext):
     if len(text) > 15:
         await message.answer("Це не схоже на номер авто. Спробуйте ще раз.")
         return
+
+    user_data = await state.get_data()
+
+    last_search_message_id = user_data.get("last_search_msg_id")
+    if last_search_message_id:
+        try:
+            await message.bot.edit_message_reply_markup(
+                chat_id=message.chat.id,
+                message_id=last_search_message_id,
+                reply_markup=None
+            )
+        except TelegramBadRequest as e:
+            if "message is not modified" in str(e) or "message to edit not found" in str(e):
+                pass
+            else:
+                logger.warning(f"TelegramBadRequest при очищенні попереднього пошуку: {e}")
+
+        await state.update_data(last_search_msg_id=None)
 
     msg = await message.answer("🔍 Шукаю авто...")
 
@@ -54,7 +90,6 @@ async def handle_text_lookup(message: Message, state: FSMContext):
             if data.get("found"):
                 logger.info(f"The car {text} was found")
 
-                user_data = await state.get_data()
                 is_detailed_info_allowed = user_data.get("role", "resident") == "guard" or user_data.get("is_admin", False)
 
                 info = data["info"]
@@ -83,15 +118,25 @@ async def handle_text_lookup(message: Message, state: FSMContext):
                     target_tg_id = info.get("owner_telegram_id")
                     reply_markup = None
 
-                    if target_tg_id and target_tg_id != message.from_user.id and user_data.get("role") != 'guard':
+                    if target_tg_id and user_data.get("role") == 'resident' and target_tg_id != message.from_user.id:
                         builder = InlineKeyboardBuilder()
                         builder.button(
                             text="💬 Надіслати повідомлення власнику",
-                            callback_data=ContactOwnerCB(target_id=target_tg_id, plate=data['plate'])
+                            callback_data=ContactOwnerCB(target_id=target_tg_id, plate=data['plate'], timestamp=int(time.time()))
                         )
                         reply_markup = builder.as_markup()
 
-                    await msg.edit_text(res_text, reply_markup=reply_markup)
+                    sent_msg = await msg.edit_text(res_text, reply_markup=reply_markup)
+
+                    if reply_markup:
+                        await state.update_data(last_search_msg_id=sent_msg.message_id)
+
+                        asyncio.create_task(remove_expired_keyboard(
+                            bot=message.bot,
+                            chat_id=sent_msg.chat.id,
+                            message_id=sent_msg.message_id,
+                            keyboard_lifetime_seconds=CAR_MESSAGE_KEYBOARD_EXPIRATION_SECONDS
+                        ))
 
                 # -- ВАРІАНТ 2: ЗНАЙДЕНО (Гість) --
                 else:
@@ -127,6 +172,12 @@ async def handle_text_lookup(message: Message, state: FSMContext):
 
 @router.callback_query(ContactOwnerCB.filter())
 async def select_message_to_owner(call: CallbackQuery, callback_data: ContactOwnerCB):
+    current_time = int(time.time())
+    if current_time - callback_data.timestamp > CAR_MESSAGE_KEYBOARD_EXPIRATION_SECONDS:
+        await call.message.edit_reply_markup(reply_markup=None)
+        await call.answer("⏳ Час дії кнопки вийшов. Зробіть пошук авто наново.", show_alert=True)
+        return
+
     """Вибір варіанту повідомлення власнику"""
     builder = InlineKeyboardBuilder()
     builder.button(

@@ -64,6 +64,7 @@ kb_guard_dashboard = InlineKeyboardMarkup(
 class ContactOwnerCB(CallbackData, prefix="contact_owner"):
     target_id: int
     plate: str
+    timestamp: int
 
 
 class SendMsgCB(CallbackData, prefix="send_msg"):
