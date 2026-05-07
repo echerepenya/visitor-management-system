@@ -25,7 +25,7 @@ router = Router()
 
 logger = logging.getLogger(__name__)
 
-CAR_MESSAGE_KEYBOARD_EXPIRATION_SECONDS = 15
+CAR_MESSAGE_KEYBOARD_EXPIRATION_SECONDS = 120
 
 
 async def remove_expired_keyboard(bot: Bot, chat_id: int, message_id: int, keyboard_lifetime_seconds: int) -> None:
