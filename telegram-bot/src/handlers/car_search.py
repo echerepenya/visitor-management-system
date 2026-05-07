@@ -25,7 +25,7 @@ router = Router()
 
 logger = logging.getLogger(__name__)
 
-CAR_MESSAGE_KEYBOARD_EXPIRATION_SECONDS = 300
+CAR_MESSAGE_KEYBOARD_EXPIRATION_SECONDS = 15
 
 
 async def remove_expired_keyboard(bot: Bot, chat_id: int, message_id: int, keyboard_lifetime_seconds: int) -> None:
@@ -75,7 +75,7 @@ async def render_car_card(data: dict, user_data: dict):
 
         target_tg_id = info.get("owner_telegram_id")
         # Кнопка зв'язку доступна тільки для мешканців, і не для свого власного авто
-        if target_tg_id and user_data.get("role") == 'resident' and str(target_tg_id) != str(user_data.get("telegram_id")):
+        if target_tg_id and user_data.get("role") == 'resident':  # and str(target_tg_id) != str(user_data.get("telegram_id")):
             builder = InlineKeyboardBuilder()
             builder.button(
                 text="💬 Надіслати повідомлення власнику",
@@ -234,7 +234,19 @@ async def process_car_selection(call: CallbackQuery, callback_data: SelectCarCB,
             if data.get("found") and not data.get("multiple"):
                 user_data = await state.get_data()
                 res_text, reply_markup = await render_car_card(data, user_data)
-                await call.message.edit_text(res_text, reply_markup=reply_markup)
+                sent_msg = await call.message.edit_text(res_text, reply_markup=reply_markup)
+
+                if reply_markup:
+                    msg_id = sent_msg.message_id if isinstance(sent_msg, Message) else call.message.message_id
+
+                    await state.update_data(last_search_msg_id=msg_id)
+
+                    asyncio.create_task(remove_expired_keyboard(
+                        bot=call.bot,
+                        chat_id=call.message.chat.id,
+                        message_id=msg_id,
+                        keyboard_lifetime_seconds=CAR_MESSAGE_KEYBOARD_EXPIRATION_SECONDS
+                    ))
             else:
                 await call.message.edit_text("⚠️ Авто більше не знайдено.")
 
@@ -334,8 +346,17 @@ async def cancel_message_selection(call: CallbackQuery, callback_data: CancelCB)
         text="💬 Надіслати повідомлення власнику",
         callback_data=ContactOwnerCB(target_id=callback_data.target_id, plate=callback_data.plate, timestamp=int(time.time()))
     )
-    await call.message.edit_reply_markup(reply_markup=builder.as_markup())
+
+    reply_markup = builder.as_markup()
+    await call.message.edit_reply_markup(reply_markup=reply_markup)
     await call.answer("Скасовано")
+
+    asyncio.create_task(remove_expired_keyboard(
+        bot=call.bot,
+        chat_id=call.message.chat.id,
+        message_id=call.message.message_id,
+        keyboard_lifetime_seconds=CAR_MESSAGE_KEYBOARD_EXPIRATION_SECONDS
+    ))
 
 
 @router.callback_query(ReplySenderCB.filter())
