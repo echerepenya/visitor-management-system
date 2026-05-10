@@ -75,7 +75,7 @@ async def render_car_card(data: dict, user_data: dict):
 
         target_tg_id = info.get("owner_telegram_id")
         # Кнопка зв'язку доступна тільки для мешканців, і не для свого власного авто
-        if target_tg_id and user_data.get("role") == 'resident':  # and str(target_tg_id) != str(user_data.get("telegram_id")):
+        if target_tg_id and user_data.get("role") == 'resident' and str(target_tg_id) != str(user_data.get("telegram_id")):
             builder = InlineKeyboardBuilder()
             builder.button(
                 text="💬 Надіслати повідомлення власнику",

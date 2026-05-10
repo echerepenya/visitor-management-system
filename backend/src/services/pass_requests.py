@@ -1,10 +1,12 @@
 import datetime
 import json
 import logging
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
+from src.config import settings
 from src.database import AsyncSessionLocal, get_redis
 from src.models.request import GuestRequest, RequestStatus
 from src.services.websocket_manager import manager
@@ -13,8 +15,16 @@ PASS_REQUEST_EXPIRATION_HOURS: int = 8
 
 logger = logging.getLogger(__name__)
 
+LOCAL_TIMEZONE = ZoneInfo(settings.TZ)
+
 
 async def check_expired_requests():
+    now_local_time = datetime.datetime.now(LOCAL_TIMEZONE)
+
+    # Skip check if it's between 00:00 and 08:00 local time
+    if 0 <= now_local_time.hour < 8:
+        return
+
     redis = await get_redis()
 
     async with AsyncSessionLocal() as session:
