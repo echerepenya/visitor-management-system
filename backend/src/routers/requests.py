@@ -32,7 +32,6 @@ class CreateRequestSchema(BaseModel):
 
 @router.get("/", response_model=list[GuestRequestResponseSchema], dependencies=[Depends(get_current_user)])
 async def get_requests(db: AsyncSession = Depends(get_db)):
-    eight_hours_ago = datetime.now(timezone.utc) - timedelta(hours=8)
     three_hours_ago = datetime.now(timezone.utc) - timedelta(hours=3)
 
     stmt = (
@@ -40,10 +39,7 @@ async def get_requests(db: AsyncSession = Depends(get_db)):
         .options(joinedload(GuestRequest.user))
         .where(
             or_(
-                and_(
-                    GuestRequest.status == RequestStatus.NEW,
-                    GuestRequest.created_at >= eight_hours_ago
-                ),
+                GuestRequest.status == RequestStatus.NEW,
                 and_(
                     GuestRequest.status == RequestStatus.COMPLETED,
                     GuestRequest.updated_at >= three_hours_ago
