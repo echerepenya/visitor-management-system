@@ -3,7 +3,7 @@ import json
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Path
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
@@ -103,6 +103,7 @@ async def get_telegram_user(payload: TelegramRequestSchema, db: AsyncSession = D
 async def check_car(
     payload: TelegramRequestSchema,
     plate: str = Path(..., min_length=1, max_length=20, pattern=r'^[A-ZА-ЯІЇЄa-zа-яіїє0-9\s\-]+$'),
+    exact: bool = Query(False),
     db: AsyncSession = Depends(get_db)
 ):
     clean_plate = normalize_plate(plate)
@@ -113,6 +114,7 @@ async def check_car(
         "plate": clean_plate,
         "found": False,
         "type": None,
+        "multiple": False,
         "info": {}
     }
 
@@ -120,7 +122,39 @@ async def check_car(
     if active_user:
         await log_user_activity(db, active_user.id, "car_search")
 
+    # ==========================================
+    # БЛОК 0. Пошук за частковим збігом
+    # ==========================================
+    # Якщо введено від 3 до 5 символів (наприклад, тільки 4 цифри номера)
+    if not exact and 3 <= len(clean_plate) <= 5:
+        # Шукаємо у мешканців (ilike для нечутливості до регістру, % для часткового збігу)
+        stmt_cars_partial = select(Car.plate_number).where(Car.plate_number.ilike(f"%{clean_plate}%")).limit(10)
+        res_cars_partial = await db.execute(stmt_cars_partial)
+        partial_cars = res_cars_partial.scalars().all()
+
+        # Шукаємо у гостьових заявках
+        stmt_reqs_partial = select(GuestRequest.value).where(GuestRequest.value.ilike(f"%{clean_plate}%")).limit(10)
+        res_reqs_partial = await db.execute(stmt_reqs_partial)
+        partial_reqs = res_reqs_partial.scalars().all()
+
+        # Об'єднуємо результати і прибираємо дублікати (якщо один і той самий номер є і там, і там)
+        all_matches = list(set(partial_cars + partial_reqs))
+
+        if len(all_matches) > 1:
+            # Знайдено кілька машин - повертаємо список для боту
+            response_data["found"] = True
+            response_data["multiple"] = True
+            response_data["cars"] = all_matches[:10] # Обмежуємо до 10 кнопок
+            return response_data
+        elif len(all_matches) == 1:
+            # Знайдено рівно одну машину за частковим збігом - замінюємо clean_plate на повний номер
+            # і дозволяємо коду йти далі, щоб видати повну картку автомобіля
+            clean_plate = all_matches[0]
+            response_data["plate"] = clean_plate
+
+    # ==========================================
     # 1. Search among residents - in cars table
+    # ==========================================
     stmt_car = (
         select(Car).options(selectinload(Car.owner).selectinload(User.apartment).selectinload(Apartment.building))
         .where(Car.plate_number == clean_plate)
@@ -142,7 +176,9 @@ async def check_car(
         }
         return response_data
 
+    # ==========================================
     # 2. Else do search in guest requests - in requests table
+    # ==========================================
     stmt_req = (select(GuestRequest).options(
         selectinload(GuestRequest.user).selectinload(User.apartment).selectinload(Apartment.building))
         .where(GuestRequest.value == clean_plate)
@@ -162,7 +198,7 @@ async def check_car(
             "phone": request.user.phone_number,
             "building": apt.building.address if apt else None,
             "apartment": apt.number if apt else None,
-            "request_type": request.type,
+            "request_type": getattr(request, "type", None),
         }
         return response_data
 
