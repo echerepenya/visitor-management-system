@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, String, Text, DateTime, func, ForeignKey
+from sqlalchemy import Integer, String, Text, Boolean, DateTime, func, ForeignKey
 from sqlalchemy.orm import relationship, mapped_column
 from src.database import Base
 from src.utils import normalize_plate
@@ -13,6 +13,8 @@ class Car(Base):
     plate_number = mapped_column(String(20), unique=True, index=True, nullable=False)
     model = mapped_column(String(100), nullable=True)
     notes = mapped_column(Text, nullable=True)
+
+    has_rfid = mapped_column(Boolean, default=False, nullable=False, server_default='FALSE')
 
     owner_id = mapped_column(Integer, ForeignKey("users.id", name='fk_' + __tablename__ + '_owner_id_users', ondelete="CASCADE"), nullable=False)
     owner = relationship("User", back_populates="cars", lazy="selectin", foreign_keys="Car.owner_id")
