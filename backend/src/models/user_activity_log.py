@@ -8,7 +8,7 @@ class UserActivityLog(Base):
 
     id = Column(BigInteger, primary_key=True, index=True)
 
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     user = relationship("User", back_populates="logs", lazy="selectin")
 
     action = Column(String, nullable=False)

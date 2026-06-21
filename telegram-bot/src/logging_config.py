@@ -36,6 +36,7 @@ def setup_logging():
                 "propagate": True
             },
             "aiogram": {"level": "INFO"},
+            "aiogram.event": {"level": "WARNING"},
             "httpx": {"level": "WARNING"},
             "uvicorn": {"level": "INFO"},
             "uvicorn.access": {"level": "INFO"},

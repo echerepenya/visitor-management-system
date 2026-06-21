@@ -26,6 +26,7 @@ class CarAdmin(AuditMixin, ModelView, model=Car):
     column_list = [
         "plate_number",
         "model",
+        "has_rfid",
         "owner.full_name",
         "owner.phone_number",
         "owner.apartment.building.address",
@@ -35,6 +36,7 @@ class CarAdmin(AuditMixin, ModelView, model=Car):
     column_labels = {
         "plate_number": "Номер авто",
         "model": "Марка",
+        "has_rfid": "RF мітка",
         "owner": "Власник (Пошук по телефону)",
         "owner.full_name": "Власник",
         "owner.phone_number": "Телефон",
@@ -43,7 +45,7 @@ class CarAdmin(AuditMixin, ModelView, model=Car):
         "notes": "Додаткові нотатки"
     }
 
-    form_columns = ["plate_number", "model", "owner", "notes"]
+    form_columns = ["plate_number", "model", "owner", "has_rfid", "notes"]
 
     form_ajax_refs = {
         "owner": {

@@ -12,6 +12,67 @@ from src.utils import normalize_phone, normalize_plate
 logger = logging.getLogger(__name__)
 
 
+async def import_cars_with_rfid(file_content: bytes, db: AsyncSession):
+    decoded_content = file_content.decode("utf-8")
+    reader = csv.DictReader(io.StringIO(decoded_content))
+
+    stats = {
+        "cars_created": 0,
+        "cars_updated": 0,
+        "users_not_found": [],
+        "errors": 0
+    }
+
+    for row in reader:
+        nested = await db.begin_nested()
+        try:
+            phone = normalize_phone(row.get("phone", "").strip())
+            plate = normalize_plate(row.get("plate", "").strip())
+
+            if not phone or not plate:
+                continue
+
+            res = await db.execute(select(Car).where(Car.plate_number == plate))
+            stored_car = res.scalar_one_or_none()
+
+            if stored_car:
+                if not stored_car.has_rfid:
+                    stored_car.has_rfid = True
+                    stats["cars_updated"] += 1
+            else:
+                res = await db.execute(select(User).where(User.phone_number == phone))
+                car_owner = res.scalar_one_or_none()
+
+                if not car_owner:
+                    stats["users_not_found"].append({"phone": phone, "plate": plate})
+                    continue
+
+                new_car = Car(
+                    plate_number=plate,
+                    owner_id=car_owner.id,
+                    has_rfid=True
+                )
+                db.add(new_car)
+                stats["cars_created"] += 1
+
+            await nested.commit()
+
+        except Exception as e:
+            await nested.rollback()
+            logger.error(f"Помилка при імпорті рядка {row}: {e}")
+            stats["errors"] += 1
+            continue
+
+    try:
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        logger.critical(f"Критична помилка при збереженні імпорту: {e}")
+        raise
+
+    return stats
+
+
 async def import_customers_and_cars_from_csv(file_content: bytes, db: AsyncSession):
     decoded_content = file_content.decode("utf-8")
     reader = csv.DictReader(io.StringIO(decoded_content))
