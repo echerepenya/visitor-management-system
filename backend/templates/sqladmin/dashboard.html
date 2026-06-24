@@ -1,0 +1,465 @@
+{% extends "sqladmin/layout.html" %}
+
+{% block content %}
+<div class="container-xl">
+  <div class="page-header d-print-none">
+    <div class="row align-items-center">
+      <div class="col">
+        <h2 class="page-title">Дашборд</h2>
+        <div class="text-muted mt-1">Загальна статистика системи управління доступом</div>
+      </div>
+    </div>
+  </div>
+
+  {# ===== МЕШКАНЦІ ===== #}
+  <div class="row mb-1 mt-3">
+    <div class="col-12"><h3 class="mb-3">Мешканці</h3></div>
+  </div>
+
+  <div class="row row-deck row-cards mb-4">
+    <div class="col-sm-6 col-lg-3">
+      <div class="card">
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col-auto">
+              <span class="avatar bg-primary text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0 -3 -3.85"/></svg>
+              </span>
+            </div>
+            <div class="col">
+              <div class="font-weight-medium" style="font-size:1.8rem;line-height:1.2">{{ stats.total_residents }}</div>
+              <div class="text-muted">Всього мешканців</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+      <div class="card">
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col-auto">
+              <span class="avatar bg-azure text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M15 10l-4 4l6 6l4 -16l-18 7l4 2l2 6l3 -4"/></svg>
+              </span>
+            </div>
+            <div class="col">
+              <div class="font-weight-medium" style="font-size:1.8rem;line-height:1.2">{{ stats.telegram_connected }}</div>
+              <div class="text-muted">Підключили Telegram</div>
+            </div>
+          </div>
+          <div class="progress progress-sm mt-2">
+            <div class="progress-bar bg-azure" style="width: {{ stats.telegram_pct }}%"></div>
+          </div>
+          <div class="text-muted mt-1" style="font-size:.75rem">{{ stats.telegram_pct }}% від усіх мешканців</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+      <div class="card">
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col-auto">
+              <span class="avatar bg-yellow text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5"/></svg>
+              </span>
+            </div>
+            <div class="col">
+              <div class="font-weight-medium" style="font-size:1.8rem;line-height:1.2">{{ stats.residents_with_cars }}</div>
+              <div class="text-muted">Мешканців з авто</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+      <div class="card">
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col-auto">
+              <span class="avatar bg-green text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"/><path d="M16 19h6"/><path d="M19 16v6"/><path d="M6 21v-2a4 4 0 0 1 4 -4h4"/></svg>
+              </span>
+            </div>
+            <div class="col">
+              <div class="font-weight-medium" style="font-size:1.8rem;line-height:1.2">{{ stats.new_residents_month }}</div>
+              <div class="text-muted">Нових цього місяця</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ===== АВТО ===== #}
+  <div class="row mb-1">
+    <div class="col-12"><h3 class="mb-3">Авто</h3></div>
+  </div>
+
+  <div class="row row-deck row-cards mb-4">
+    <div class="col-sm-6 col-lg-3">
+      <div class="card">
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col-auto">
+              <span class="avatar bg-primary text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5"/></svg>
+              </span>
+            </div>
+            <div class="col">
+              <div class="font-weight-medium" style="font-size:1.8rem;line-height:1.2">{{ stats.total_cars }}</div>
+              <div class="text-muted">Всього авто</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+      <div class="card">
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col-auto">
+              <span class="avatar bg-teal text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12.5c0 .313 .461 .858 1.53 1.393c1.914 .98 4.742 1.607 7.97 1.607c3.228 0 6.056 -.627 7.97 -1.607c1.069 -.535 1.53 -1.08 1.53 -1.393"/><path d="M20.69 9.784c-1.914 -.98 -4.742 -1.607 -7.97 -1.607c-3.228 0 -6.056 .627 -7.97 1.607"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/><path d="M12 3l0 18"/><path d="M3 12l18 0"/></svg>
+              </span>
+            </div>
+            <div class="col">
+              <div class="font-weight-medium" style="font-size:1.8rem;line-height:1.2">{{ stats.rfid_cars }}</div>
+              <div class="text-muted">З RFID-міткою</div>
+            </div>
+          </div>
+          <div class="progress progress-sm mt-2">
+            <div class="progress-bar bg-teal" style="width: {{ stats.rfid_pct }}%"></div>
+          </div>
+          <div class="text-muted mt-1" style="font-size:.75rem">{{ stats.rfid_pct }}% від усіх авто</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+      <div class="card">
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col-auto">
+              <span class="avatar bg-secondary text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5"/><path d="M3 3l18 18"/></svg>
+              </span>
+            </div>
+            <div class="col">
+              <div class="font-weight-medium" style="font-size:1.8rem;line-height:1.2">{{ stats.no_rfid_cars }}</div>
+              <div class="text-muted">Без RFID</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ===== ЗАЯВКИ — ЧАСОВА СТАТИСТИКА ===== #}
+  <div class="row mb-1">
+    <div class="col-12"><h3 class="mb-3">Заявки на пропуск</h3></div>
+  </div>
+
+  <div class="row row-deck row-cards mb-3">
+    {% for label, value in [
+        ("Сьогодні", stats.req_today),
+        ("Цього тижня", stats.req_week),
+        ("Цього місяця", stats.req_month),
+        ("За весь час", stats.req_total),
+    ] %}
+    <div class="col-sm-6 col-lg-3">
+      <div class="card">
+        <div class="card-body">
+          <div class="subheader">{{ label }}</div>
+          <div class="h1 mb-0 mt-2">{{ value }}</div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {# ===== ЗАЯВКИ — РОЗБИВКА ===== #}
+  <div class="row row-deck row-cards mb-4">
+    {# По статусах #}
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-header">
+          <h3 class="card-title">По статусах</h3>
+          {% if stats.req_total > 0 %}
+          <div class="ms-auto">
+            <span class="badge bg-green-lt text-green">{{ stats.completion_rate }}% виконано</span>
+          </div>
+          {% endif %}
+        </div>
+        <div class="card-body">
+          {% set statuses = [
+            ("new",       "Нова",       "bg-green",     stats.by_status.get("new", 0)),
+            ("completed", "Виконана",   "bg-secondary", stats.by_status.get("completed", 0)),
+            ("expired",   "Прострочена","bg-dark",      stats.by_status.get("expired", 0)),
+          ] %}
+          {% for key, label, color, cnt in statuses %}
+          <div class="{% if not loop.last %}mb-3{% endif %}">
+            <div class="d-flex align-items-center mb-1">
+              <strong>{{ label }}</strong>
+              <span class="ms-auto text-muted">{{ cnt }}</span>
+            </div>
+            <div class="progress progress-sm">
+              <div class="progress-bar {{ color }}" style="width: {{ (cnt / stats.req_total * 100) | int if stats.req_total else 0 }}%"></div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    {# По типах #}
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-header">
+          <h3 class="card-title">По типах</h3>
+        </div>
+        <div class="card-body">
+          {% set types = [
+            ("guest_car",  "Гостьове авто", "bg-primary"),
+            ("taxi",       "Таксі",         "bg-yellow"),
+            ("delivery",   "Доставка",      "bg-orange"),
+            ("guest_foot", "Гість пішки",   "bg-purple"),
+          ] %}
+          {% for key, label, color in types %}
+          {% set cnt = stats.by_type.get(key, 0) %}
+          <div class="{% if not loop.last %}mb-3{% endif %}">
+            <div class="d-flex align-items-center mb-1">
+              <strong>{{ label }}</strong>
+              <span class="ms-auto text-muted">{{ cnt }}</span>
+            </div>
+            <div class="progress progress-sm">
+              <div class="progress-bar {{ color }}" style="width: {{ (cnt / stats.req_total * 100) | int if stats.req_total else 0 }}%"></div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ===== ОХОРОНЦІ — ЗАКРИТІ ЗАЯВКИ ===== #}
+  <div class="row mb-1">
+    <div class="col-12"><h3 class="mb-3">Ефективність КПП</h3></div>
+  </div>
+
+  <div class="row row-deck row-cards mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Закриті заявки по охоронцях</h3>
+          <div class="card-options">
+            <span class="text-muted" style="font-size:.8rem">
+              Непропорційна різниця між КПП — можливий індикатор роботи без звірки заявок
+            </span>
+          </div>
+        </div>
+        {% if stats.by_guard %}
+        <div class="table-responsive">
+          <table class="table table-vcenter card-table">
+            <thead>
+              <tr>
+                <th>Охоронець</th>
+                <th class="text-center" style="width:120px">Цього тижня</th>
+                <th class="text-center" style="width:120px">Цього місяця</th>
+                <th class="text-center" style="width:120px">Всього</th>
+                <th style="width:200px">% від закритих</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for g in stats.by_guard %}
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <span class="avatar avatar-sm bg-secondary text-white me-2" style="flex-shrink:0">
+                      {{ (g.display_name[0] | upper) if g.display_name else "?" }}
+                    </span>
+                    <div>
+                      <div class="font-weight-medium">{{ g.display_name }}</div>
+                      {% if g.username %}
+                      <div class="text-muted" style="font-size:.75rem">@{{ g.username }}</div>
+                      {% endif %}
+                    </div>
+                  </div>
+                </td>
+                <td class="text-center">
+                  <span class="text-{{ 'success' if loop.first else 'muted' }} fw-bold">{{ g.this_week }}</span>
+                </td>
+                <td class="text-center">
+                  <span class="fw-bold">{{ g.this_month }}</span>
+                </td>
+                <td class="text-center">
+                  <span class="fw-bold">{{ g.total }}</span>
+                </td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="progress progress-sm flex-grow-1">
+                      <div class="progress-bar bg-primary" style="width: {{ g.pct }}%"></div>
+                    </div>
+                    <span class="text-muted" style="font-size:.8rem;min-width:35px">{{ g.pct }}%</span>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="card-body text-muted">Ще немає закритих заявок.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {# ===== РЕКОРДИ ===== #}
+  <div class="row mb-1">
+    <div class="col-12"><h3 class="mb-3">Рекорди</h3></div>
+  </div>
+
+  <div class="row row-deck row-cards mb-4">
+    <div class="col-sm-6 col-lg-3">
+      <div class="card">
+        <div class="card-body">
+          <div class="subheader text-muted mb-2">Найактивніший мешканець</div>
+          {% if stats.most_active %}
+          <div class="h3 mb-1">{{ stats.most_active.name }}</div>
+          <div class="text-muted">{{ stats.most_active.count }} заявок</div>
+          {% else %}
+          <div class="text-muted">Немає даних</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+      <div class="card">
+        <div class="card-body">
+          <div class="subheader text-muted mb-2">Найбільше авто</div>
+          {% if stats.most_cars %}
+          <div class="h3 mb-1">{{ stats.most_cars.name }}</div>
+          <div class="text-muted">{{ stats.most_cars.count }} авто</div>
+          {% else %}
+          <div class="text-muted">Немає даних</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+      <div class="card">
+        <div class="card-body">
+          <div class="subheader text-muted mb-2">Найбільше мешканців у квартирі</div>
+          {% if stats.most_residents_apt %}
+          <div class="h3 mb-1">{{ stats.most_residents_apt.address }}, кв.&nbsp;{{ stats.most_residents_apt.number }}</div>
+          <div class="text-muted">{{ stats.most_residents_apt.count }} мешканців</div>
+          {% else %}
+          <div class="text-muted">Немає даних</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+      <div class="card">
+        <div class="card-body">
+          <div class="subheader text-muted mb-2">Рекордний день за заявками</div>
+          {% if stats.busiest_day %}
+          <div class="h3 mb-1">{{ stats.busiest_day.date }}</div>
+          <div class="text-muted">{{ stats.busiest_day.count }} заявок</div>
+          {% else %}
+          <div class="text-muted">Немає даних</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ===== ІНФРАСТРУКТУРА ===== #}
+  <div class="row mb-1">
+    <div class="col-12"><h3 class="mb-3">Інфраструктура</h3></div>
+  </div>
+
+  <div class="row row-deck row-cards mb-4">
+    <div class="col-sm-6 col-lg-3">
+      <div class="card">
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col-auto">
+              <span class="avatar bg-primary text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21l18 0"/><path d="M9 8l1 0"/><path d="M9 12l1 0"/><path d="M9 16l1 0"/><path d="M14 8l1 0"/><path d="M14 12l1 0"/><path d="M14 16l1 0"/><path d="M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16"/></svg>
+              </span>
+            </div>
+            <div class="col">
+              <div class="font-weight-medium" style="font-size:1.8rem;line-height:1.2">{{ stats.total_buildings }}</div>
+              <div class="text-muted">Будинків</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+      <div class="card">
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col-auto">
+              <span class="avatar bg-azure text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M3 6l9 -3l9 3"/><path d="M8 9h1"/><path d="M15 9h1"/><path d="M8 21v-13"/><path d="M16 21v-13"/><path d="M3 21h18"/><path d="M3 6v15"/><path d="M21 6v15"/></svg>
+              </span>
+            </div>
+            <div class="col">
+              <div class="font-weight-medium" style="font-size:1.8rem;line-height:1.2">{{ stats.total_apartments }}</div>
+              <div class="text-muted">Квартир</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+      <div class="card">
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col-auto">
+              <span class="avatar bg-warning text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M3 6l9 -3l9 3"/><path d="M8 9h1"/><path d="M15 9h1"/><path d="M8 21v-13"/><path d="M16 21v-13"/><path d="M3 21h18"/><path d="M3 6v15"/><path d="M21 6v15"/></svg>
+              </span>
+            </div>
+            <div class="col">
+              <div class="font-weight-medium" style="font-size:1.8rem;line-height:1.2">{{ stats.empty_apartments }}</div>
+              <div class="text-muted">Порожніх квартир</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+      <div class="card">
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col-auto">
+              <span class="avatar bg-red text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 3a4 4 0 0 1 4 4a4 4 0 0 1 -4 4a4 4 0 0 1 -4 -4a4 4 0 0 1 4 -4"/><path d="M4 19v-1a4 4 0 0 1 4 -4h8a4 4 0 0 1 4 4v1"/><path d="M16 11l1.5 5l1.5 -5"/><path d="M19 14.5h-3"/></svg>
+              </span>
+            </div>
+            <div class="col">
+              <div class="font-weight-medium" style="font-size:1.8rem;line-height:1.2">{{ stats.total_admins }}</div>
+              <div class="text-muted">Адміністраторів</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

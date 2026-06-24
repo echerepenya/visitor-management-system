@@ -21,6 +21,7 @@ from src.admin.building_admin import BuildingAdmin
 from src.admin.car_admin import CarAdmin
 from src.admin.request_admin import RequestAdmin
 from src.admin.user_admin import SuperUserAdmin, RestrictedUserAdmin
+from src.admin.dashboard import DashboardView
 from src.services.websocket_manager import manager
 
 
@@ -98,6 +99,7 @@ app.include_router(import_data.router)
 
 
 admin = Admin(app, engine, authentication_backend=authentication_backend, title="VMS адмін", templates_dir="templates")
+admin.add_base_view(DashboardView)
 admin.add_view(BuildingAdmin)
 admin.add_view(ApartmentAdmin)
 admin.add_view(RestrictedUserAdmin)
