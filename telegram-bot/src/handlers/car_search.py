@@ -106,6 +106,19 @@ async def render_car_card(data: dict, user_data: dict):
             f"{phone}"
         )
 
+        target_tg_id = info.get("owner_telegram_id")
+        if target_tg_id and user_data.get("role") == 'resident' and str(target_tg_id) != str(user_data.get("telegram_id")):
+            builder = InlineKeyboardBuilder()
+            builder.button(
+                text="💬 Надіслати повідомлення запрошувачу",
+                callback_data=ContactOwnerCB(
+                    target_id=target_tg_id,
+                    plate=plate,
+                    timestamp=int(time.time())
+                )
+            )
+            reply_markup = builder.as_markup()
+
     # -- ВАРІАНТ 3: НЕ ЗНАЙДЕНО --
     else:
         text = f"⛔️ **Авто `{plate}` НЕ знайдено**\nНемає в базі мешканців та немає заявок."

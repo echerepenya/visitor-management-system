@@ -199,6 +199,7 @@ async def check_car(
             "building": apt.building.address if apt else None,
             "apartment": apt.number if apt else None,
             "request_type": getattr(request, "type", None),
+            "owner_telegram_id": request.user.telegram_id,
         }
         return response_data
 

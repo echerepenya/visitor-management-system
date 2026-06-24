@@ -27,7 +27,7 @@ async def pass_type_chosen(message: Message, state: FSMContext):
     text = message.text
 
     if text == "❌ Скасувати":
-        await state.clear()
+        await state.set_state(None)
         await message.answer("Скасовано.", reply_markup=kb_main)
         return
 
@@ -57,7 +57,7 @@ async def pass_type_chosen(message: Message, state: FSMContext):
 @router.message(PassState.waiting_for_value)
 async def pass_value_chosen(message: Message, state: FSMContext):
     if message.text == "❌ Скасувати":
-        await state.clear()
+        await state.set_state(None)
         await message.answer("Скасовано.", reply_markup=kb_main)
         return
 
@@ -95,4 +95,4 @@ async def pass_value_chosen(message: Message, state: FSMContext):
         logger.info(f"Помилка з'єднання: {e}")
         await message.answer(f"⚠️ Помилка з'єднання: {e}", reply_markup=kb_main)
 
-    await state.clear()
+    await state.set_state(None)
