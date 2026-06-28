@@ -101,10 +101,11 @@ async def get_telegram_user(payload: TelegramRequestSchema, db: AsyncSession = D
 
 @router.post("/car-search/{plate}")
 async def check_car(
-    payload: TelegramRequestSchema,
-    plate: str = Path(..., min_length=1, max_length=20, pattern=r'^[A-ZА-ЯІЇЄa-zа-яіїє0-9\s\-]+$'),
-    exact: bool = Query(False),
-    db: AsyncSession = Depends(get_db)
+        payload: TelegramRequestSchema,
+        plate: str = Path(..., min_length=1, max_length=20, pattern=r'^[A-ZА-ЯІЇЄa-zа-яіїє0-9\s\-]+$'),
+        exact: bool = Query(False),
+        search_mode: str = Query("full"),
+        db: AsyncSession = Depends(get_db)
 ):
     clean_plate = normalize_plate(plate)
     if not clean_plate:
@@ -125,7 +126,6 @@ async def check_car(
     # ==========================================
     # БЛОК 0. Пошук за частковим збігом
     # ==========================================
-    # Якщо введено від 3 до 5 символів (наприклад, тільки 4 цифри номера)
     if not exact and 3 <= len(clean_plate) <= 5:
         # Шукаємо у мешканців (ilike для нечутливості до регістру, % для часткового збігу)
         stmt_cars_partial = select(Car.plate_number).where(Car.plate_number.ilike(f"%{clean_plate}%")).limit(10)
@@ -133,22 +133,25 @@ async def check_car(
         partial_cars = res_cars_partial.scalars().all()
 
         # Шукаємо у гостьових заявках
-        stmt_reqs_partial = select(GuestRequest.value).where(GuestRequest.value.ilike(f"%{clean_plate}%")).limit(10)
+        stmt_reqs_partial = select(GuestRequest.value).where(GuestRequest.value.ilike(f"%{clean_plate}%"))
+
+        # ДОДАНО: Якщо режим в'їзду - беремо тільки нові заявки
+        if search_mode == "entry":
+            stmt_reqs_partial = stmt_reqs_partial.where(GuestRequest.status == 'new')
+
+        stmt_reqs_partial = stmt_reqs_partial.limit(10)
         res_reqs_partial = await db.execute(stmt_reqs_partial)
         partial_reqs = res_reqs_partial.scalars().all()
 
-        # Об'єднуємо результати і прибираємо дублікати (якщо один і той самий номер є і там, і там)
+        # Об'єднуємо результати і прибираємо дублікати
         all_matches = list(set(partial_cars + partial_reqs))
 
         if len(all_matches) > 1:
-            # Знайдено кілька машин - повертаємо список для боту
             response_data["found"] = True
             response_data["multiple"] = True
-            response_data["cars"] = all_matches[:10] # Обмежуємо до 10 кнопок
+            response_data["cars"] = all_matches[:10]
             return response_data
         elif len(all_matches) == 1:
-            # Знайдено рівно одну машину за частковим збігом - замінюємо clean_plate на повний номер
-            # і дозволяємо коду йти далі, щоб видати повну картку автомобіля
             clean_plate = all_matches[0]
             response_data["plate"] = clean_plate
 
@@ -181,10 +184,18 @@ async def check_car(
     # ==========================================
     stmt_req = (select(GuestRequest).options(
         selectinload(GuestRequest.user).selectinload(User.apartment).selectinload(Apartment.building))
-        .where(GuestRequest.value == clean_plate)
-        .order_by(func.coalesce(GuestRequest.updated_at, GuestRequest.created_at).desc())
+                .where(GuestRequest.value == clean_plate)
+                )
+
+    # ДОДАНО: Фільтрація по статусу для режиму в'їзду
+    if search_mode == "entry":
+        stmt_req = stmt_req.where(GuestRequest.status == 'new')
+
+    stmt_req = (
+        stmt_req.order_by(func.coalesce(GuestRequest.updated_at, GuestRequest.created_at).desc())
         .limit(1)
     )
+
     res_req = await db.execute(stmt_req)
     request = res_req.scalars().first()
 
@@ -194,12 +205,14 @@ async def check_car(
         apt = request.user.apartment
         response_data["info"] = {
             "invited_by": request.user.full_name,
-            "invited_at": request.updated_at or request.created_at,
+            "invited_at": (request.updated_at or request.created_at).isoformat() if (
+                        request.updated_at or request.created_at) else None,
             "phone": request.user.phone_number,
             "building": apt.building.address if apt else None,
             "apartment": apt.number if apt else None,
             "request_type": getattr(request, "type", None),
             "owner_telegram_id": request.user.telegram_id,
+            "status": getattr(request, "status", None)
         }
         return response_data
 
