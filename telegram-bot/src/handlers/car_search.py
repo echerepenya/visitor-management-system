@@ -169,6 +169,7 @@ async def perform_car_search(
 
             if data.get("found"):
                 if data.get("multiple"):
+                    logger.info(f"Multiple cars found for {cleaned_plate}")
                     builder = InlineKeyboardBuilder()
                     for car_plate in data["cars"]:
                         builder.button(text=f"🚙 {car_plate}",
@@ -180,6 +181,7 @@ async def perform_car_search(
                     await state.update_data(last_search_msg_id=msg.message_id)
                     return
 
+                logger.info(f"The car {data.get('plate', cleaned_plate)} was found exactly")
                 res_text, inline_markup = await render_car_card(data, user_data)
                 sent_msg = await msg.edit_text(res_text, reply_markup=inline_markup)
 
@@ -188,6 +190,7 @@ async def perform_car_search(
                     asyncio.create_task(remove_expired_keyboard(message.bot, sent_msg.chat.id, sent_msg.message_id,
                                                                 CAR_MESSAGE_KEYBOARD_EXPIRATION_SECONDS))
             else:
+                logger.info(f"The car {data.get('plate', cleaned_plate)} was not found")
                 await msg.edit_text(f"⛔️ **Авто `{data.get('plate', cleaned_plate)}` НЕ знайдено**")
 
     except Exception as e:
