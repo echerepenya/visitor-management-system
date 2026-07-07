@@ -319,6 +319,69 @@
     </div>
   </div>
 
+  <div class="row row-deck row-cards mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Закриті заявки по охоронцях, по днях</h3>
+          <div class="card-options">
+            <span class="text-muted" style="font-size:.8rem">
+              За останні {{ stats.by_guard_daily.day_labels | length }} днів
+            </span>
+          </div>
+        </div>
+        {% if stats.by_guard_daily.guards %}
+        <div class="table-responsive">
+          <table class="table table-vcenter card-table">
+            <thead>
+              <tr>
+                <th>Охоронець</th>
+                {% for day in stats.by_guard_daily.day_labels %}
+                <th class="text-center" style="width:80px">{{ day }}</th>
+                {% endfor %}
+                <th class="text-center" style="width:100px">Всього</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for g in stats.by_guard_daily.guards %}
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <span class="avatar avatar-sm bg-secondary text-white me-2" style="flex-shrink:0">
+                      {{ (g.display_name[0] | upper) if g.display_name else "?" }}
+                    </span>
+                    <div>
+                      <div class="font-weight-medium">{{ g.display_name }}</div>
+                      {% if g.username %}
+                      <div class="text-muted" style="font-size:.75rem">@{{ g.username }}</div>
+                      {% endif %}
+                    </div>
+                  </div>
+                </td>
+                {% for cnt in g.counts %}
+                <td class="text-center">
+                  {% if cnt > 0 %}
+                  <span class="fw-bold">{{ cnt }}</span>
+                  {% else %}
+                  <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+                {% endfor %}
+                <td class="text-center">
+                  <span class="fw-bold">{{ g.total }}</span>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="card-body text-muted">Ще немає закритих заявок за останні {{ stats.by_guard_daily.day_labels | length }} днів.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
   {# ===== РЕКОРДИ ===== #}
   <div class="row mb-1">
     <div class="col-12"><h3 class="mb-3">Рекорди</h3></div>

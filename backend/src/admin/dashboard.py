@@ -3,7 +3,7 @@ from sqlalchemy import select, func, distinct, cast, Date, case
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from src.database import AsyncSessionLocal
 from src.models.apartment import Apartment
@@ -34,7 +34,7 @@ class DashboardView(BaseView):
 async def _get_stats(session: AsyncSession) -> dict:
     now = datetime.now(timezone.utc)
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    week_start = today_start.replace(day=today_start.day - today_start.weekday())
+    week_start = today_start - timedelta(days=today_start.weekday())
     month_start = today_start.replace(day=1)
 
     # --- Residents ---
@@ -131,6 +131,47 @@ async def _get_stats(session: AsyncSession) -> dict:
         for row in guard_rows
     ]
 
+    # --- Completed requests per guard, per day (last 5 days) ---
+    days_window = 5
+    days_window_start = today_start - timedelta(days=days_window - 1)
+    daily_guard_rows = (
+        await session.execute(
+            select(
+                User.id,
+                User.full_name,
+                User.username,
+                cast(GuestRequest.updated_at, Date).label("day"),
+                func.count(GuestRequest.id).label("cnt"),
+            )
+            .join(GuestRequest, GuestRequest.completed_by == User.id)
+            .where(
+                GuestRequest.status == RequestStatus.COMPLETED,
+                GuestRequest.updated_at >= days_window_start,
+            )
+            .group_by(User.id, User.full_name, User.username, cast(GuestRequest.updated_at, Date))
+        )
+    ).all()
+
+    day_keys = [(today_start - timedelta(days=offset)).date() for offset in range(days_window - 1, -1, -1)]
+    day_labels = [day.strftime("%d.%m") for day in day_keys]
+
+    guards_by_id = {}
+    for row in daily_guard_rows:
+        guard = guards_by_id.setdefault(row.id, {
+            "display_name": row.full_name or row.username or "—",
+            "username": row.username or "",
+            "counts": [0] * days_window,
+            "total": 0,
+        })
+        if row.day in day_keys:
+            guard["counts"][day_keys.index(row.day)] = row.cnt
+            guard["total"] += row.cnt
+
+    by_guard_daily = {
+        "day_labels": day_labels,
+        "guards": sorted(guards_by_id.values(), key=lambda g: g["total"], reverse=True),
+    }
+
     # --- Records ---
     most_active_row = (
         await session.execute(
@@ -225,6 +266,7 @@ async def _get_stats(session: AsyncSession) -> dict:
         "by_type": by_type,
         "completion_rate": completion_rate,
         "by_guard": by_guard,
+        "by_guard_daily": by_guard_daily,
         # Records
         "most_active": {
             "name": most_active_row[0] or most_active_row[1],
