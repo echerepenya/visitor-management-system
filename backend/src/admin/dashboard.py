@@ -9,7 +9,7 @@ from src.database import AsyncSessionLocal
 from src.models.apartment import Apartment
 from src.models.building import Building
 from src.models.car import Car
-from src.models.request import GuestRequest, RequestStatus
+from src.models.request import GuestRequest, RequestStatus, RequestType
 from src.models.user import User, UserRole
 
 
@@ -218,6 +218,57 @@ async def _get_stats(session: AsyncSession) -> dict:
         )
     ).first()
 
+    # --- Suspicious guest-car activity ---
+    # Flags residents repeatedly letting in many *different* cars via guest_car
+    # requests — a pattern consistent with selling parking access to strangers,
+    # rather than occasionally hosting the same guest(s).
+    suspicious_window_days = 30
+    suspicious_window_start = today_start - timedelta(days=suspicious_window_days)
+    suspicious_min_distinct_cars = 3
+
+    suspicious_rows = (
+        await session.execute(
+            select(
+                User.full_name,
+                User.phone_number,
+                Building.address,
+                Apartment.number,
+                func.count(GuestRequest.id).label("total"),
+                func.count(distinct(GuestRequest.value)).label("distinct_cars"),
+                func.max(GuestRequest.created_at).label("last_request"),
+            )
+            .join(GuestRequest, GuestRequest.user_id == User.id)
+            .outerjoin(Apartment, User.apartment_id == Apartment.id)
+            .outerjoin(Building, Apartment.building_id == Building.id)
+            .where(
+                GuestRequest.type == RequestType.GUEST_CAR,
+                GuestRequest.status == RequestStatus.COMPLETED,
+                GuestRequest.created_at >= suspicious_window_start,
+                User.is_deleted.is_(False),
+            )
+            .group_by(User.id, User.full_name, User.phone_number, Building.address, Apartment.number)
+            .having(func.count(distinct(GuestRequest.value)) >= suspicious_min_distinct_cars)
+            .order_by(
+                func.count(distinct(GuestRequest.value)).desc(),
+                func.count(GuestRequest.id).desc(),
+            )
+            .limit(10)
+        )
+    ).all()
+
+    top_car_requesters = [
+        {
+            "name": row.full_name or "—",
+            "phone": row.phone_number or "",
+            "address": row.address,
+            "apartment": row.number,
+            "total": row.total,
+            "distinct_cars": row.distinct_cars,
+            "last_request": row.last_request.strftime("%d.%m.%Y") if row.last_request else "",
+        }
+        for row in suspicious_rows
+    ]
+
     # --- Infrastructure ---
     total_buildings = await session.scalar(select(func.count(Building.id)))
     total_apartments = await session.scalar(select(func.count(Apartment.id)))
@@ -285,6 +336,10 @@ async def _get_stats(session: AsyncSession) -> dict:
             "date": busiest_day_row[0].strftime("%d.%m.%Y") if hasattr(busiest_day_row[0], "strftime") else str(busiest_day_row[0]),
             "count": busiest_day_row[1],
         } if busiest_day_row else None,
+        # Suspicious guest-car activity
+        "top_car_requesters": top_car_requesters,
+        "suspicious_window_days": suspicious_window_days,
+        "suspicious_min_distinct_cars": suspicious_min_distinct_cars,
         # Infrastructure
         "total_buildings": total_buildings or 0,
         "total_apartments": total_apartments or 0,

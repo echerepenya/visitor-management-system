@@ -445,6 +445,72 @@
     </div>
   </div>
 
+  {# ===== ПІДОЗРІЛА АКТИВНІСТЬ (ГОСТЬОВІ АВТО) ===== #}
+  <div class="row mb-1">
+    <div class="col-12"><h3 class="mb-3">Підозріла активність (гостьові авто)</h3></div>
+  </div>
+
+  <div class="row row-deck row-cards mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Мешканці, що регулярно запускають різні авто</h3>
+          <div class="card-options">
+            <span class="text-muted" style="font-size:.8rem">
+              За останні {{ stats.suspicious_window_days }} днів, від {{ stats.suspicious_min_distinct_cars }}+ різних авто
+            </span>
+          </div>
+        </div>
+        {% if stats.top_car_requesters %}
+        <div class="table-responsive">
+          <table class="table table-vcenter card-table">
+            <thead>
+              <tr>
+                <th>Мешканець</th>
+                <th>Квартира</th>
+                <th class="text-center">Заявок (авто)</th>
+                <th class="text-center">Унікальних авто</th>
+                <th class="text-center">Остання заявка</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in stats.top_car_requesters %}
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <span class="avatar avatar-sm bg-danger text-white me-2" style="flex-shrink:0">
+                      {{ (r.name[0] | upper) if r.name else "?" }}
+                    </span>
+                    <div>
+                      <div class="font-weight-medium">{{ r.name }}</div>
+                      {% if r.phone %}
+                      <div class="text-muted" style="font-size:.75rem">{{ r.phone }}</div>
+                      {% endif %}
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  {% if r.address %}
+                  {{ r.address }}, кв.&nbsp;{{ r.apartment }}
+                  {% else %}
+                  <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+                <td class="text-center"><span class="fw-bold">{{ r.total }}</span></td>
+                <td class="text-center"><span class="fw-bold text-danger">{{ r.distinct_cars }}</span></td>
+                <td class="text-center">{{ r.last_request }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="card-body text-muted">Немає мешканців, що перевищують поріг підозрілості.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
   {# ===== ІНФРАСТРУКТУРА ===== #}
   <div class="row mb-1">
     <div class="col-12"><h3 class="mb-3">Інфраструктура</h3></div>
