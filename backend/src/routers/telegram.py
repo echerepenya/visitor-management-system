@@ -280,3 +280,32 @@ async def get_resident_contact_guards(payload: TelegramRequestSchema, db: AsyncS
         await log_user_activity(db, active_user.id, "guard_contacts")
 
     return await get_resident_contact_guard_users(db)
+
+
+class TelegramPeerMessageSchema(BaseModel):
+    sender_telegram_id: int
+    receiver_telegram_id: int
+    plate: str
+    msg_type: str
+
+
+@router.post("/log-peer-message")
+async def log_peer_message(payload: TelegramPeerMessageSchema, db: AsyncSession = Depends(get_db)):
+    sender = await db.scalar(select(User).where(User.telegram_id == payload.sender_telegram_id))
+    if not sender:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sender user not found")
+
+    receiver = await db.scalar(select(User).where(User.telegram_id == payload.receiver_telegram_id))
+    if not receiver:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Receiver user not found")
+
+    details = {
+        "receiver_id": receiver.id,
+        "receiver_name": receiver.full_name or receiver.username or str(payload.receiver_telegram_id),
+        "plate": payload.plate,
+        "msg_type": payload.msg_type
+    }
+
+    await log_user_activity(db, sender.id, "sent_peer_message", details)
+    return {"status": "logged"}
+

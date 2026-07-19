@@ -182,6 +182,9 @@ async def perform_car_search(
                     return
 
                 logger.info(f"The car {data.get('plate', cleaned_plate)} was found exactly")
+                if "telegram_id" not in user_data:
+                    user_data = dict(user_data)
+                    user_data["telegram_id"] = message.from_user.id
                 res_text, inline_markup = await render_car_card(data, user_data)
                 sent_msg = await msg.edit_text(res_text, reply_markup=inline_markup)
 
@@ -277,6 +280,9 @@ async def process_car_selection(call: CallbackQuery, callback_data: SelectCarCB,
 
             if data.get("found") and not data.get("multiple"):
                 user_data = await state.get_data()
+                if "telegram_id" not in user_data:
+                    user_data = dict(user_data)
+                    user_data["telegram_id"] = call.from_user.id
                 res_text, inline_markup = await render_car_card(data, user_data)
                 sent_msg = await call.message.edit_text(res_text, reply_markup=inline_markup)
 
@@ -364,6 +370,22 @@ async def send_message_to_owner(
             text=f"📨 **Повідомлення від сусіда:**\n\n{msg_text}",
             reply_markup=reply_markup
         )
+        try:
+            async with httpx.AsyncClient() as client:
+                await client.post(
+                    f"{settings.API_URL}/telegram/log-peer-message",
+                    headers=settings.HEADERS,
+                    json={
+                        "sender_telegram_id": sender_id,
+                        "receiver_telegram_id": target_id,
+                        "plate": plate,
+                        "msg_type": callback_data.msg_type
+                    },
+                    timeout=5.0
+                )
+        except Exception as api_err:
+            logger.error(f"Failed to log peer message to backend: {api_err}")
+
         await call.message.edit_text(
             call.message.text + f"\n\n✅ *Повідомлення успішно надіслано.*",
             reply_markup=None

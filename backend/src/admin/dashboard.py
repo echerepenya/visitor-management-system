@@ -1,6 +1,7 @@
 from sqladmin import BaseView, expose
 from sqlalchemy import select, func, distinct, cast, Date, case
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
 from datetime import datetime, timedelta, timezone
@@ -11,6 +12,7 @@ from src.models.building import Building
 from src.models.car import Car
 from src.models.request import GuestRequest, RequestStatus, RequestType
 from src.models.user import User, UserRole
+from src.models.user_activity_log import UserActivityLog
 
 
 class DashboardView(BaseView):
@@ -286,6 +288,82 @@ async def _get_stats(session: AsyncSession) -> dict:
         )
     )
 
+    # --- Peer Messages last month ---
+    peer_logs = (
+        await session.execute(
+            select(UserActivityLog)
+            .where(
+                UserActivityLog.action == "sent_peer_message",
+                UserActivityLog.created_at >= month_start
+            )
+            .order_by(UserActivityLog.created_at.desc())
+        )
+    ).scalars().all()
+
+    user_ids = set()
+    for log in peer_logs:
+        user_ids.add(log.user_id)
+        rx_id = log.details.get("receiver_id") if log.details else None
+        if rx_id:
+            user_ids.add(int(rx_id))
+
+    users_dict = {}
+    if user_ids:
+        users = (
+            await session.execute(
+                select(User)
+                .options(selectinload(User.apartment).selectinload(Apartment.building))
+                .where(User.id.in_(list(user_ids)))
+            )
+        ).scalars().all()
+        users_dict = {u.id: u for u in users}
+
+    peer_messages = []
+    msg_type_translation = {
+        "block": "⚠️ Заважає виїхати",
+        "come": "🚶 Підійдіть до авто",
+        "praise": "👍 Гарне паркування"
+    }
+
+    for log in peer_logs:
+        sender = users_dict.get(log.user_id)
+        rx_id = int(log.details.get("receiver_id")) if log.details and log.details.get("receiver_id") else None
+        receiver = users_dict.get(rx_id) if rx_id else None
+
+        if not sender:
+            continue
+
+        sender_info = {
+            "name": sender.full_name or sender.username or "—",
+            "phone": sender.phone_number or "",
+            "address": sender.apartment.building.address if sender.apartment else None,
+            "apartment": sender.apartment.number if sender.apartment else None
+        }
+
+        if receiver:
+            receiver_info = {
+                "name": receiver.full_name or receiver.username or "—",
+                "phone": receiver.phone_number or "",
+                "address": receiver.apartment.building.address if receiver.apartment else None,
+                "apartment": receiver.apartment.number if receiver.apartment else None
+            }
+        else:
+            receiver_info = {
+                "name": log.details.get("receiver_name") or "—",
+                "phone": "",
+                "address": None,
+                "apartment": None
+            }
+
+        msg_type_raw = log.details.get("msg_type", "")
+        peer_messages.append({
+            "created_at": log.created_at.strftime("%d.%m.%Y %H:%M"),
+            "sender": sender_info,
+            "receiver": receiver_info,
+            "plate": log.details.get("plate", "—"),
+            "msg_type": msg_type_translation.get(msg_type_raw, msg_type_raw)
+        })
+
     # --- Derived metrics ---
     completed = by_status.get("completed", 0)
     expired = by_status.get("expired", 0)
@@ -345,4 +423,6 @@ async def _get_stats(session: AsyncSession) -> dict:
         "total_apartments": total_apartments or 0,
         "empty_apartments": empty_apartments,
         "total_admins": total_admins or 0,
+        # Peer Messages
+        "peer_messages": peer_messages,
     }
