@@ -61,6 +61,7 @@ class StateRecoveryMiddleware(BaseMiddleware):
                     role=payload.get("role"),
                     name=payload.get("full_name"),
                     is_admin=payload.get("is_admin", False),
+                    telegram_id=user.id,
                 )
                 logger.info("State recovered for user %s (role=%s)", user.id, payload.get("role"))
 

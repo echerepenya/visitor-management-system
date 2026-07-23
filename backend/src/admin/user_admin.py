@@ -178,7 +178,7 @@ class RestrictedUserAdmin(BaseUserAdmin, model=RestrictedUser):
     name_plural = "Користувачі"
 
     column_list = ["phone_number", "full_name", "address_info", "role", "is_admin"]
-    form_columns = ["phone_number", "full_name", "apartment"]
+    form_columns = ["phone_number", "full_name", "apartment", "role"]
 
     column_formatters = {
         "address_info": lambda m, a: str(m.apartment) if m.apartment else "-"

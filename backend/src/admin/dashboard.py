@@ -1,16 +1,18 @@
 from sqladmin import BaseView, expose
 from sqlalchemy import select, func, distinct, cast, Date, case
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from src.database import AsyncSessionLocal
 from src.models.apartment import Apartment
 from src.models.building import Building
 from src.models.car import Car
-from src.models.request import GuestRequest, RequestStatus
+from src.models.request import GuestRequest, RequestStatus, RequestType
 from src.models.user import User, UserRole
+from src.models.user_activity_log import UserActivityLog
 
 
 class DashboardView(BaseView):
@@ -34,7 +36,7 @@ class DashboardView(BaseView):
 async def _get_stats(session: AsyncSession) -> dict:
     now = datetime.now(timezone.utc)
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    week_start = today_start.replace(day=today_start.day - today_start.weekday())
+    week_start = today_start - timedelta(days=today_start.weekday())
     month_start = today_start.replace(day=1)
 
     # --- Residents ---
@@ -131,6 +133,47 @@ async def _get_stats(session: AsyncSession) -> dict:
         for row in guard_rows
     ]
 
+    # --- Completed requests per guard, per day (last 5 days) ---
+    days_window = 5
+    days_window_start = today_start - timedelta(days=days_window - 1)
+    daily_guard_rows = (
+        await session.execute(
+            select(
+                User.id,
+                User.full_name,
+                User.username,
+                cast(GuestRequest.updated_at, Date).label("day"),
+                func.count(GuestRequest.id).label("cnt"),
+            )
+            .join(GuestRequest, GuestRequest.completed_by == User.id)
+            .where(
+                GuestRequest.status == RequestStatus.COMPLETED,
+                GuestRequest.updated_at >= days_window_start,
+            )
+            .group_by(User.id, User.full_name, User.username, cast(GuestRequest.updated_at, Date))
+        )
+    ).all()
+
+    day_keys = [(today_start - timedelta(days=offset)).date() for offset in range(days_window - 1, -1, -1)]
+    day_labels = [day.strftime("%d.%m") for day in day_keys]
+
+    guards_by_id = {}
+    for row in daily_guard_rows:
+        guard = guards_by_id.setdefault(row.id, {
+            "display_name": row.full_name or row.username or "—",
+            "username": row.username or "",
+            "counts": [0] * days_window,
+            "total": 0,
+        })
+        if row.day in day_keys:
+            guard["counts"][day_keys.index(row.day)] = row.cnt
+            guard["total"] += row.cnt
+
+    by_guard_daily = {
+        "day_labels": day_labels,
+        "guards": sorted(guards_by_id.values(), key=lambda g: g["total"], reverse=True),
+    }
+
     # --- Records ---
     most_active_row = (
         await session.execute(
@@ -177,6 +220,57 @@ async def _get_stats(session: AsyncSession) -> dict:
         )
     ).first()
 
+    # --- Suspicious guest-car activity ---
+    # Flags residents repeatedly letting in many *different* cars via guest_car
+    # requests — a pattern consistent with selling parking access to strangers,
+    # rather than occasionally hosting the same guest(s).
+    suspicious_window_days = 30
+    suspicious_window_start = today_start - timedelta(days=suspicious_window_days)
+    suspicious_min_distinct_cars = 3
+
+    suspicious_rows = (
+        await session.execute(
+            select(
+                User.full_name,
+                User.phone_number,
+                Building.address,
+                Apartment.number,
+                func.count(GuestRequest.id).label("total"),
+                func.count(distinct(GuestRequest.value)).label("distinct_cars"),
+                func.max(GuestRequest.created_at).label("last_request"),
+            )
+            .join(GuestRequest, GuestRequest.user_id == User.id)
+            .outerjoin(Apartment, User.apartment_id == Apartment.id)
+            .outerjoin(Building, Apartment.building_id == Building.id)
+            .where(
+                GuestRequest.type == RequestType.GUEST_CAR,
+                GuestRequest.status == RequestStatus.COMPLETED,
+                GuestRequest.created_at >= suspicious_window_start,
+                User.is_deleted.is_(False),
+            )
+            .group_by(User.id, User.full_name, User.phone_number, Building.address, Apartment.number)
+            .having(func.count(distinct(GuestRequest.value)) >= suspicious_min_distinct_cars)
+            .order_by(
+                func.count(distinct(GuestRequest.value)).desc(),
+                func.count(GuestRequest.id).desc(),
+            )
+            .limit(10)
+        )
+    ).all()
+
+    top_car_requesters = [
+        {
+            "name": row.full_name or "—",
+            "phone": row.phone_number or "",
+            "address": row.address,
+            "apartment": row.number,
+            "total": row.total,
+            "distinct_cars": row.distinct_cars,
+            "last_request": row.last_request.strftime("%d.%m.%Y") if row.last_request else "",
+        }
+        for row in suspicious_rows
+    ]
+
     # --- Infrastructure ---
     total_buildings = await session.scalar(select(func.count(Building.id)))
     total_apartments = await session.scalar(select(func.count(Apartment.id)))
@@ -193,6 +287,82 @@ async def _get_stats(session: AsyncSession) -> dict:
             User.is_deleted.is_(False),
         )
     )
+
+    # --- Peer Messages last month ---
+    peer_logs = (
+        await session.execute(
+            select(UserActivityLog)
+            .where(
+                UserActivityLog.action == "sent_peer_message",
+                UserActivityLog.created_at >= month_start
+            )
+            .order_by(UserActivityLog.created_at.desc())
+        )
+    ).scalars().all()
+
+    user_ids = set()
+    for log in peer_logs:
+        user_ids.add(log.user_id)
+        rx_id = log.details.get("receiver_id") if log.details else None
+        if rx_id:
+            user_ids.add(int(rx_id))
+
+    users_dict = {}
+    if user_ids:
+        users = (
+            await session.execute(
+                select(User)
+                .options(selectinload(User.apartment).selectinload(Apartment.building))
+                .where(User.id.in_(list(user_ids)))
+            )
+        ).scalars().all()
+        users_dict = {u.id: u for u in users}
+
+    peer_messages = []
+    msg_type_translation = {
+        "block": "⚠️ Заважає виїхати",
+        "come": "🚶 Підійдіть до авто",
+        "praise": "👍 Гарне паркування"
+    }
+
+    for log in peer_logs:
+        sender = users_dict.get(log.user_id)
+        rx_id = int(log.details.get("receiver_id")) if log.details and log.details.get("receiver_id") else None
+        receiver = users_dict.get(rx_id) if rx_id else None
+
+        if not sender:
+            continue
+
+        sender_info = {
+            "name": sender.full_name or sender.username or "—",
+            "phone": sender.phone_number or "",
+            "address": sender.apartment.building.address if sender.apartment else None,
+            "apartment": sender.apartment.number if sender.apartment else None
+        }
+
+        if receiver:
+            receiver_info = {
+                "name": receiver.full_name or receiver.username or "—",
+                "phone": receiver.phone_number or "",
+                "address": receiver.apartment.building.address if receiver.apartment else None,
+                "apartment": receiver.apartment.number if receiver.apartment else None
+            }
+        else:
+            receiver_info = {
+                "name": log.details.get("receiver_name") or "—",
+                "phone": "",
+                "address": None,
+                "apartment": None
+            }
+
+        msg_type_raw = log.details.get("msg_type", "")
+        peer_messages.append({
+            "created_at": log.created_at.strftime("%d.%m.%Y %H:%M"),
+            "sender": sender_info,
+            "receiver": receiver_info,
+            "plate": log.details.get("plate", "—"),
+            "msg_type": msg_type_translation.get(msg_type_raw, msg_type_raw)
+        })
 
     # --- Derived metrics ---
     completed = by_status.get("completed", 0)
@@ -225,6 +395,7 @@ async def _get_stats(session: AsyncSession) -> dict:
         "by_type": by_type,
         "completion_rate": completion_rate,
         "by_guard": by_guard,
+        "by_guard_daily": by_guard_daily,
         # Records
         "most_active": {
             "name": most_active_row[0] or most_active_row[1],
@@ -243,9 +414,15 @@ async def _get_stats(session: AsyncSession) -> dict:
             "date": busiest_day_row[0].strftime("%d.%m.%Y") if hasattr(busiest_day_row[0], "strftime") else str(busiest_day_row[0]),
             "count": busiest_day_row[1],
         } if busiest_day_row else None,
+        # Suspicious guest-car activity
+        "top_car_requesters": top_car_requesters,
+        "suspicious_window_days": suspicious_window_days,
+        "suspicious_min_distinct_cars": suspicious_min_distinct_cars,
         # Infrastructure
         "total_buildings": total_buildings or 0,
         "total_apartments": total_apartments or 0,
         "empty_apartments": empty_apartments,
         "total_admins": total_admins or 0,
+        # Peer Messages
+        "peer_messages": peer_messages,
     }

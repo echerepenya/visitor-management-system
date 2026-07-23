@@ -319,6 +319,69 @@
     </div>
   </div>
 
+  <div class="row row-deck row-cards mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Закриті заявки по охоронцях, по днях</h3>
+          <div class="card-options">
+            <span class="text-muted" style="font-size:.8rem">
+              За останні {{ stats.by_guard_daily.day_labels | length }} днів
+            </span>
+          </div>
+        </div>
+        {% if stats.by_guard_daily.guards %}
+        <div class="table-responsive">
+          <table class="table table-vcenter card-table">
+            <thead>
+              <tr>
+                <th>Охоронець</th>
+                {% for day in stats.by_guard_daily.day_labels %}
+                <th class="text-center" style="width:80px">{{ day }}</th>
+                {% endfor %}
+                <th class="text-center" style="width:100px">Всього</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for g in stats.by_guard_daily.guards %}
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <span class="avatar avatar-sm bg-secondary text-white me-2" style="flex-shrink:0">
+                      {{ (g.display_name[0] | upper) if g.display_name else "?" }}
+                    </span>
+                    <div>
+                      <div class="font-weight-medium">{{ g.display_name }}</div>
+                      {% if g.username %}
+                      <div class="text-muted" style="font-size:.75rem">@{{ g.username }}</div>
+                      {% endif %}
+                    </div>
+                  </div>
+                </td>
+                {% for cnt in g.counts %}
+                <td class="text-center">
+                  {% if cnt > 0 %}
+                  <span class="fw-bold">{{ cnt }}</span>
+                  {% else %}
+                  <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+                {% endfor %}
+                <td class="text-center">
+                  <span class="fw-bold">{{ g.total }}</span>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="card-body text-muted">Ще немає закритих заявок за останні {{ stats.by_guard_daily.day_labels | length }} днів.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
   {# ===== РЕКОРДИ ===== #}
   <div class="row mb-1">
     <div class="col-12"><h3 class="mb-3">Рекорди</h3></div>
@@ -378,6 +441,153 @@
           <div class="text-muted">Немає даних</div>
           {% endif %}
         </div>
+      </div>
+    </div>
+  </div>
+
+  {# ===== ПІДОЗРІЛА АКТИВНІСТЬ (ГОСТЬОВІ АВТО) ===== #}
+  <div class="row mb-1">
+    <div class="col-12"><h3 class="mb-3">Підозріла активність (гостьові авто)</h3></div>
+  </div>
+
+  <div class="row row-deck row-cards mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Мешканці, що регулярно запускають різні авто</h3>
+          <div class="card-options">
+            <span class="text-muted" style="font-size:.8rem">
+              За останні {{ stats.suspicious_window_days }} днів, від {{ stats.suspicious_min_distinct_cars }}+ різних авто
+            </span>
+          </div>
+        </div>
+        {% if stats.top_car_requesters %}
+        <div class="table-responsive">
+          <table class="table table-vcenter card-table">
+            <thead>
+              <tr>
+                <th>Мешканець</th>
+                <th>Квартира</th>
+                <th class="text-center">Заявок (авто)</th>
+                <th class="text-center">Унікальних авто</th>
+                <th class="text-center">Остання заявка</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in stats.top_car_requesters %}
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <span class="avatar avatar-sm bg-danger text-white me-2" style="flex-shrink:0">
+                      {{ (r.name[0] | upper) if r.name else "?" }}
+                    </span>
+                    <div>
+                      <div class="font-weight-medium">{{ r.name }}</div>
+                      {% if r.phone %}
+                      <div class="text-muted" style="font-size:.75rem">{{ r.phone }}</div>
+                      {% endif %}
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  {% if r.address %}
+                  {{ r.address }}, кв.&nbsp;{{ r.apartment }}
+                  {% else %}
+                  <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+                <td class="text-center"><span class="fw-bold">{{ r.total }}</span></td>
+                <td class="text-center"><span class="fw-bold text-danger">{{ r.distinct_cars }}</span></td>
+                <td class="text-center">{{ r.last_request }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="card-body text-muted">Немає мешканців, що перевищують поріг підозрілості.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {# ===== ПОВІДОМЛЕННЯ МІЖ МЕШКАНЦЯМИ ===== #}
+  <div class="row mb-1">
+    <div class="col-12"><h3 class="mb-3">Повідомлення між мешканцями</h3></div>
+  </div>
+
+  <div class="row row-deck row-cards mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Повідомлення, надіслані за останній місяць</h3>
+        </div>
+        {% if stats.peer_messages %}
+        <div class="table-responsive">
+          <table class="table table-vcenter card-table">
+            <thead>
+              <tr>
+                <th>Відправник</th>
+                <th>Отримувач</th>
+                <th>Автомобіль</th>
+                <th>Тип повідомлення</th>
+                <th>Дата і час</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for msg in stats.peer_messages %}
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <span class="avatar avatar-sm bg-secondary text-white me-2" style="flex-shrink:0">
+                      {{ (msg.sender.name[0] | upper) if msg.sender.name else "?" }}
+                    </span>
+                    <div>
+                      <div class="font-weight-medium">{{ msg.sender.name }}</div>
+                      <div class="text-muted" style="font-size:.75rem">
+                        {% if msg.sender.address %}
+                        {{ msg.sender.address }}, кв.&nbsp;{{ msg.sender.apartment }}
+                        {% else %}
+                        Немає квартири
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <span class="avatar avatar-sm bg-secondary text-white me-2" style="flex-shrink:0">
+                      {{ (msg.receiver.name[0] | upper) if msg.receiver.name else "?" }}
+                    </span>
+                    <div>
+                      <div class="font-weight-medium">{{ msg.receiver.name }}</div>
+                      <div class="text-muted" style="font-size:.75rem">
+                        {% if msg.receiver.address %}
+                        {{ msg.receiver.address }}, кв.&nbsp;{{ msg.receiver.apartment }}
+                        {% else %}
+                        Немає квартири
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge bg-blue-lt">{{ msg.plate }}</span>
+                </td>
+                <td>
+                  <span class="font-weight-medium">{{ msg.msg_type }}</span>
+                </td>
+                <td class="text-muted">
+                  {{ msg.created_at }}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="card-body text-muted">За останній місяць повідомлень між мешканцями не надсилалось.</div>
+        {% endif %}
       </div>
     </div>
   </div>

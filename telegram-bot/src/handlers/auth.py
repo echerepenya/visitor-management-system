@@ -12,7 +12,7 @@ from aiogram.types import (
 )
 
 from src.config import settings
-from src.keyboards import kb_auth, kb_main, kb_guard_dashboard
+from src.keyboards import kb_auth, kb_main, kb_guard_dashboard, kb_main_guard
 
 router = Router()
 
@@ -76,14 +76,15 @@ async def handle_contact(message: Message, state: FSMContext):
                 await state.update_data(
                     role=role,
                     name=data.get('name'),
-                    is_admin=data.get('is_admin')
+                    is_admin=data.get('is_admin'),
+                    telegram_id=message.from_user.id
                 )
 
                 if role == 'guard':
                     await message.answer(
                         f"✅ **Авторизація успішна!**\n\n"
                         f"👤 **{data.get('name')}**",
-                        reply_markup=ReplyKeyboardRemove()
+                        reply_markup=kb_main_guard
                     )
 
                     await message.answer(

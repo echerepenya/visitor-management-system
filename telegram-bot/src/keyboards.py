@@ -28,6 +28,15 @@ kb_main = ReplyKeyboardMarkup(
     input_field_placeholder="Введіть номер авто для пошуку..."
 )
 
+kb_main_guard = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="🚗 Чия це машина?")],
+    ],
+    resize_keyboard=True,
+    input_field_placeholder="Введіть номер авто для пошуку..."
+)
+
+
 # 3. Visitor type selection
 kb_pass_types = ReplyKeyboardMarkup(
     keyboard=[
@@ -63,6 +72,7 @@ kb_guard_dashboard = InlineKeyboardMarkup(
 # Car search keyboards
 class SelectCarCB(CallbackData, prefix="sel_car"):
     plate: str
+    mode: str = "entry"
 
 
 # CAR_MESSAGE keyboards
