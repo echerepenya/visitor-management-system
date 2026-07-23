@@ -511,6 +511,87 @@
     </div>
   </div>
 
+  {# ===== ПОВІДОМЛЕННЯ МІЖ МЕШКАНЦЯМИ ===== #}
+  <div class="row mb-1">
+    <div class="col-12"><h3 class="mb-3">Повідомлення між мешканцями</h3></div>
+  </div>
+
+  <div class="row row-deck row-cards mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Повідомлення, надіслані за останній місяць</h3>
+        </div>
+        {% if stats.peer_messages %}
+        <div class="table-responsive">
+          <table class="table table-vcenter card-table">
+            <thead>
+              <tr>
+                <th>Відправник</th>
+                <th>Отримувач</th>
+                <th>Автомобіль</th>
+                <th>Тип повідомлення</th>
+                <th>Дата і час</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for msg in stats.peer_messages %}
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <span class="avatar avatar-sm bg-secondary text-white me-2" style="flex-shrink:0">
+                      {{ (msg.sender.name[0] | upper) if msg.sender.name else "?" }}
+                    </span>
+                    <div>
+                      <div class="font-weight-medium">{{ msg.sender.name }}</div>
+                      <div class="text-muted" style="font-size:.75rem">
+                        {% if msg.sender.address %}
+                        {{ msg.sender.address }}, кв.&nbsp;{{ msg.sender.apartment }}
+                        {% else %}
+                        Немає квартири
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <span class="avatar avatar-sm bg-secondary text-white me-2" style="flex-shrink:0">
+                      {{ (msg.receiver.name[0] | upper) if msg.receiver.name else "?" }}
+                    </span>
+                    <div>
+                      <div class="font-weight-medium">{{ msg.receiver.name }}</div>
+                      <div class="text-muted" style="font-size:.75rem">
+                        {% if msg.receiver.address %}
+                        {{ msg.receiver.address }}, кв.&nbsp;{{ msg.receiver.apartment }}
+                        {% else %}
+                        Немає квартири
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge bg-blue-lt">{{ msg.plate }}</span>
+                </td>
+                <td>
+                  <span class="font-weight-medium">{{ msg.msg_type }}</span>
+                </td>
+                <td class="text-muted">
+                  {{ msg.created_at }}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="card-body text-muted">За останній місяць повідомлень між мешканцями не надсилалось.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
   {# ===== ІНФРАСТРУКТУРА ===== #}
   <div class="row mb-1">
     <div class="col-12"><h3 class="mb-3">Інфраструктура</h3></div>

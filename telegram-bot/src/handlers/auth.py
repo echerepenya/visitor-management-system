@@ -76,7 +76,8 @@ async def handle_contact(message: Message, state: FSMContext):
                 await state.update_data(
                     role=role,
                     name=data.get('name'),
-                    is_admin=data.get('is_admin')
+                    is_admin=data.get('is_admin'),
+                    telegram_id=message.from_user.id
                 )
 
                 if role == 'guard':
