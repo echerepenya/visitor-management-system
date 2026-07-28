@@ -1,6 +1,6 @@
 import logging
 
-import httpx
+from src.api import api_client
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import (
@@ -72,24 +72,23 @@ async def pass_value_chosen(message: Message, state: FSMContext):
     }
 
     try:
-        async with httpx.AsyncClient() as client:
-            logger.info(f"Creating new pass request ({data['pass_type_code']}) for customer {message.from_user.id}")
-            resp = await client.post(f"{settings.API_URL}/telegram/create-request", json=payload, headers=settings.HEADERS, timeout=10.0)
+        logger.info(f"Creating new pass request ({data['pass_type_code']}) for customer {message.from_user.id}")
+        resp = await api_client.post("/telegram/create-request", json=payload)
 
-            if resp.status_code == 201:
-                await message.answer(
-                    f"✅ **Заявку успішно створено!**\n\n"
-                    f"Тип: {data['pass_type_text']}\n"
-                    f"Інфо: **{value}**\n\n"
-                    f"Охорона вже бачить цю інформацію.",
-                    reply_markup=kb_main
-                )
-            elif resp.status_code == 404:
-                logger.info("Помилка авторизації")
-                await message.answer("❌ Помилка авторизації. Натисніть /start", reply_markup=kb_main)
-            else:
-                logger.info(f"Помилка: {resp.text}")
-                await message.answer(f"⚠️ Помилка: {resp.text}", reply_markup=kb_main)
+        if resp.status_code == 201:
+            await message.answer(
+                f"✅ **Заявку успішно створено!**\n\n"
+                f"Тип: {data['pass_type_text']}\n"
+                f"Інфо: **{value}**\n\n"
+                f"Охорона вже бачить цю інформацію.",
+                reply_markup=kb_main
+            )
+        elif resp.status_code == 404:
+            logger.info("Помилка авторизації")
+            await message.answer("❌ Помилка авторизації. Натисніть /start", reply_markup=kb_main)
+        else:
+            logger.info(f"Помилка: {resp.text}")
+            await message.answer(f"⚠️ Помилка: {resp.text}", reply_markup=kb_main)
 
     except Exception as e:
         logger.info(f"Помилка з'єднання: {e}")

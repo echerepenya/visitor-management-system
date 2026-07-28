@@ -22,7 +22,7 @@ kb_auth = ReplyKeyboardMarkup(
 kb_main = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="🎫 Замовити перепустку")],
-        [KeyboardButton(text="👮 Контакти охорони"), KeyboardButton(text="📂 Додаткові сервіси")]
+        [KeyboardButton(text="👮 Контакти охорони"), KeyboardButton(text="📂 Більше...")]
     ],
     resize_keyboard=True,
     input_field_placeholder="Оберіть дію..."
@@ -35,7 +35,7 @@ kb_additional_services = ReplyKeyboardMarkup(
         [KeyboardButton(text="◀️ Головне меню")]
     ],
     resize_keyboard=True,
-    input_field_placeholder="Додаткові сервіси..."
+    input_field_placeholder="Більше..."
 )
 
 kb_main_guard = ReplyKeyboardMarkup(

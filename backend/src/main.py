@@ -53,7 +53,7 @@ async def lifespan(app: FastAPI):
     await init_redis()
     await start_scheduler()
     yield
-    await scheduler.shutdown()
+    scheduler.shutdown()
     await close_redis()
 
 

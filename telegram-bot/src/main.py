@@ -33,8 +33,8 @@ async def main():
     dp.include_router(auth.router)
     dp.include_router(passes.router)
     dp.include_router(info.router)
-    dp.include_router(car_search.router)
     dp.include_router(parking.router)
+    dp.include_router(car_search.router)
 
     stream_task = asyncio.create_task(
         listen_redis_stream(bot, redis_client, redis_storage)
@@ -46,6 +46,8 @@ async def main():
     try:
         await dp.start_polling(bot)
     finally:
+        from src.api import api_client
+        await api_client.close()
         stream_task.cancel()
         await bot.session.close()
         await redis_client.close()

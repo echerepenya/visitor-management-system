@@ -28,6 +28,9 @@ async def handle_event(bot, data, storage):
     event = data.get('event')
     handler = handlers.get(event)
 
+    if event in ["parking_requests_updated"]:
+        return
+
     if not handler:
         logger.warning(f"Невідомий тип події: {event}")
         return

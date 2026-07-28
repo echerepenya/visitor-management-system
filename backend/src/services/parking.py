@@ -1,4 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from sqlalchemy.future import select
 from sqlalchemy import func
 from datetime import datetime, timezone, timedelta
@@ -28,7 +29,9 @@ async def get_all_dashboard_requests(db: AsyncSession):
     now = datetime.now(timezone.utc)
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     
-    stmt = select(GuestParkingRequest).where(
+    stmt = select(GuestParkingRequest).options(
+        selectinload(GuestParkingRequest.user).selectinload(User.cars)
+    ).where(
         (GuestParkingRequest.status.in_([
             ParkingStatus.new,
             ParkingStatus.keyfob_issued_entry,
@@ -167,7 +170,12 @@ async def issue_keyfob(db: AsyncSession, request_id: int):
     keyfob.issued_at = datetime.now(timezone.utc)
     
     await db.commit()
-    return req
+    
+    refresh_stmt = select(GuestParkingRequest).options(
+        selectinload(GuestParkingRequest.user).selectinload(User.cars)
+    ).where(GuestParkingRequest.id == request_id)
+    refresh_res = await db.execute(refresh_stmt)
+    return refresh_res.scalars().first()
 
 async def return_keyfob(db: AsyncSession, request_id: int):
     req_stmt = select(GuestParkingRequest).where(GuestParkingRequest.id == request_id)
@@ -193,7 +201,12 @@ async def return_keyfob(db: AsyncSession, request_id: int):
     keyfob.issued_at = None
     
     await db.commit()
-    return req
+
+    refresh_stmt = select(GuestParkingRequest).options(
+        selectinload(GuestParkingRequest.user).selectinload(User.cars)
+    ).where(GuestParkingRequest.id == request_id)
+    refresh_res = await db.execute(refresh_stmt)
+    return refresh_res.scalars().first()
 
 async def reset_keyfob(db: AsyncSession):
     keyfob = await get_keyfob(db)

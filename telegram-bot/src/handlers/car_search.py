@@ -7,6 +7,7 @@ from urllib.parse import quote
 from zoneinfo import ZoneInfo
 
 import httpx
+from src.api import api_client
 from aiogram.exceptions import TelegramBadRequest
 from redis.asyncio import Redis
 from aiogram import Router, Bot, F
@@ -148,53 +149,49 @@ async def perform_car_search(
     msg = await message.answer("🔍 Шукаю авто...")
 
     try:
-        async with httpx.AsyncClient() as client:
-            logger.info(f"Search: {cleaned_plate} | mode: {search_mode} | user: {message.from_user.id}")
+        logger.info(f"Search: {cleaned_plate} | mode: {search_mode} | user: {message.from_user.id}")
+        resp = await api_client.post(
+            f"/telegram/car-search/{quote(cleaned_plate)}?search_mode={search_mode}",
+            json={"telegram_id": message.from_user.id}
+        )
 
-            resp = await client.post(
-                f"{settings.API_URL}/telegram/car-search/{quote(cleaned_plate)}?search_mode={search_mode}",
-                headers=settings.HEADERS,
-                json={"telegram_id": message.from_user.id},
-                timeout=5.0
-            )
+        if resp.status_code == 422:
+            await msg.edit_text("⚠️ Неправильний формат номера.")
+            return
+        if resp.status_code != 200:
+            await msg.edit_text("⚠️ Помилка сервера при пошуку.")
+            return
 
-            if resp.status_code == 422:
-                await msg.edit_text("⚠️ Неправильний формат номера.")
+        data = resp.json()
+
+        if data.get("found"):
+            if data.get("multiple"):
+                logger.info(f"Multiple cars found for {cleaned_plate}")
+                builder = InlineKeyboardBuilder()
+                for car_plate in data["cars"]:
+                    builder.button(text=f"🚙 {car_plate}",
+                                   callback_data=SelectCarCB(plate=car_plate, mode=search_mode))
+                builder.adjust(1)
+
+                await msg.edit_text("🔢 **Знайдено кілька збігів.**\nОберіть авто:",
+                                    reply_markup=builder.as_markup())
+                await state.update_data(last_search_msg_id=msg.message_id)
                 return
-            if resp.status_code != 200:
-                await msg.edit_text("⚠️ Помилка сервера при пошуку.")
-                return
 
-            data = resp.json()
+            logger.info(f"The car {data.get('plate', cleaned_plate)} was found exactly")
+            if "telegram_id" not in user_data:
+                user_data = dict(user_data)
+                user_data["telegram_id"] = message.from_user.id
+            res_text, inline_markup = await render_car_card(data, user_data)
+            sent_msg = await msg.edit_text(res_text, reply_markup=inline_markup)
 
-            if data.get("found"):
-                if data.get("multiple"):
-                    logger.info(f"Multiple cars found for {cleaned_plate}")
-                    builder = InlineKeyboardBuilder()
-                    for car_plate in data["cars"]:
-                        builder.button(text=f"🚙 {car_plate}",
-                                       callback_data=SelectCarCB(plate=car_plate, mode=search_mode))
-                    builder.adjust(1)
-
-                    await msg.edit_text("🔢 **Знайдено кілька збігів.**\nОберіть авто:",
-                                        reply_markup=builder.as_markup())
-                    await state.update_data(last_search_msg_id=msg.message_id)
-                    return
-
-                logger.info(f"The car {data.get('plate', cleaned_plate)} was found exactly")
-                if "telegram_id" not in user_data:
-                    user_data = dict(user_data)
-                    user_data["telegram_id"] = message.from_user.id
-                res_text, inline_markup = await render_car_card(data, user_data)
-                sent_msg = await msg.edit_text(res_text, reply_markup=inline_markup)
-
-                if inline_markup:
-                    await state.update_data(last_search_msg_id=sent_msg.message_id)
-                    asyncio.create_task(remove_expired_keyboard(message.bot, sent_msg.chat.id, sent_msg.message_id,
-                                                                CAR_MESSAGE_KEYBOARD_EXPIRATION_SECONDS))
-            else:
-                logger.info(f"The car {data.get('plate', cleaned_plate)} was not found")
-                await msg.edit_text(f"⛔️ **Авто `{data.get('plate', cleaned_plate)}` НЕ знайдено**")
+            if inline_markup:
+                await state.update_data(last_search_msg_id=sent_msg.message_id)
+                asyncio.create_task(remove_expired_keyboard(message.bot, sent_msg.chat.id, sent_msg.message_id,
+                                                            CAR_MESSAGE_KEYBOARD_EXPIRATION_SECONDS))
+        else:
+            logger.info(f"The car {data.get('plate', cleaned_plate)} was not found")
+            await msg.edit_text(f"⛔️ **Авто `{data.get('plate', cleaned_plate)}` НЕ знайдено**")
 
     except Exception as e:
         logger.error(f"car-search API error: {e}")
@@ -244,8 +241,6 @@ async def guard_full_search_execute(message: Message, state: FSMContext):
 @router.message(StateFilter(None))
 async def handle_default_text_lookup(message: Message, state: FSMContext):
     raw_text = message.text.strip() if message.text else ''
-    if raw_text in ["🎫 Замовити перепустку", "👮 Контакти охорони", "ℹ️ Мій статус", "🚗 Чия це машина?"]:
-        return
 
     cleaned = re.sub(r'[\W_]+', '', raw_text)
     if len(cleaned) < 3 or len(cleaned) > 15:
@@ -269,29 +264,27 @@ async def process_car_selection(call: CallbackQuery, callback_data: SelectCarCB,
     await call.message.edit_text(f"🔍 Завантажую дані для {exact_plate}...")
 
     try:
-        async with httpx.AsyncClient() as client:
-            resp = await client.post(
-                f"{settings.API_URL}/telegram/car-search/{quote(exact_plate)}?exact=true&search_mode={search_mode}",
-                headers=settings.HEADERS,
-                json={"telegram_id": call.from_user.id},
-                timeout=5.0
-            )
-            data = resp.json()
+        resp = await api_client.post(
+            f"/telegram/car-search/{quote(exact_plate)}?exact=true&search_mode={search_mode}",
+            json={"telegram_id": call.from_user.id}
+        )
 
-            if data.get("found") and not data.get("multiple"):
-                user_data = await state.get_data()
-                if "telegram_id" not in user_data:
-                    user_data = dict(user_data)
-                    user_data["telegram_id"] = call.from_user.id
-                res_text, inline_markup = await render_car_card(data, user_data)
-                sent_msg = await call.message.edit_text(res_text, reply_markup=inline_markup)
+        data = resp.json()
 
-                if inline_markup:
-                    msg_id = sent_msg.message_id if isinstance(sent_msg, Message) else call.message.message_id
-                    await state.update_data(last_search_msg_id=msg_id)
-                    asyncio.create_task(remove_expired_keyboard(call.bot, call.message.chat.id, msg_id, CAR_MESSAGE_KEYBOARD_EXPIRATION_SECONDS))
-            else:
-                await call.message.edit_text("⚠️ Авто більше не знайдено.")
+        if data.get("found") and not data.get("multiple"):
+            user_data = await state.get_data()
+            if "telegram_id" not in user_data:
+                user_data = dict(user_data)
+                user_data["telegram_id"] = call.from_user.id
+            res_text, inline_markup = await render_car_card(data, user_data)
+            sent_msg = await call.message.edit_text(res_text, reply_markup=inline_markup)
+
+            if inline_markup:
+                msg_id = sent_msg.message_id if isinstance(sent_msg, Message) else call.message.message_id
+                await state.update_data(last_search_msg_id=msg_id)
+                asyncio.create_task(remove_expired_keyboard(call.bot, call.message.chat.id, msg_id, CAR_MESSAGE_KEYBOARD_EXPIRATION_SECONDS))
+        else:
+            await call.message.edit_text("⚠️ Авто більше не знайдено.")
 
     except Exception as e:
         logger.error(f"Error exact car {exact_plate}: {e}")
@@ -370,19 +363,17 @@ async def send_message_to_owner(
             text=f"📨 **Повідомлення від сусіда:**\n\n{msg_text}",
             reply_markup=reply_markup
         )
+
         try:
-            async with httpx.AsyncClient() as client:
-                await client.post(
-                    f"{settings.API_URL}/telegram/log-peer-message",
-                    headers=settings.HEADERS,
-                    json={
-                        "sender_telegram_id": sender_id,
-                        "receiver_telegram_id": target_id,
-                        "plate": plate,
-                        "msg_type": callback_data.msg_type
-                    },
-                    timeout=5.0
-                )
+            await api_client.post(
+                "/telegram/log-peer-message",
+                json={
+                    "sender_telegram_id": sender_id,
+                    "receiver_telegram_id": target_id,
+                    "plate": plate,
+                    "msg_type": callback_data.msg_type
+                }
+            )
         except Exception as api_err:
             logger.error(f"Failed to log peer message to backend: {api_err}")
 

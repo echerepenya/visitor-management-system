@@ -1,5 +1,8 @@
 from aiogram.fsm.state import State, StatesGroup
 
+class MenuState(StatesGroup):
+    additional_services = State()
+
 
 class PassState(StatesGroup):
     waiting_for_type = State()  # Taxi, Guest, etc.
