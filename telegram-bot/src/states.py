@@ -8,3 +8,6 @@ class PassState(StatesGroup):
 
 class SecurityState(StatesGroup):
     waiting_for_full_search = State()
+
+class ParkingState(StatesGroup):
+    waiting_for_plate = State()

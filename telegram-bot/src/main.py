@@ -9,7 +9,7 @@ from aiogram.fsm.storage.redis import RedisStorage
 from redis.asyncio import Redis
 
 from src.config import settings
-from src.handlers import auth, passes, car_search, info
+from src.handlers import auth, passes, car_search, info, parking
 from src.logging_config import setup_logging
 from src.middleware import StateRecoveryMiddleware
 from src.services.stream_listener import listen_redis_stream
@@ -34,6 +34,7 @@ async def main():
     dp.include_router(passes.router)
     dp.include_router(info.router)
     dp.include_router(car_search.router)
+    dp.include_router(parking.router)
 
     stream_task = asyncio.create_task(
         listen_redis_stream(bot, redis_client, redis_storage)
