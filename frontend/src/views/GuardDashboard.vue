@@ -117,6 +117,35 @@
             </tbody>
           </table>
         </div>
+
+        <!-- Mobile View: Passes -->
+        <div class="md:hidden space-y-4 mt-4">
+          <div v-for="req in sortedPassRequests" :key="'mob_' + req.id"
+               @click="req.status !== 'completed' && openConfirm(req)"
+               class="bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 relative"
+               :class="{ 'opacity-60 grayscale': req.status === 'completed' }">
+            <div class="flex justify-between items-start mb-2">
+              <span :class="getTypeColor(req.type)" class="inline-block py-1 px-2 border-2 border-black text-[10px] font-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)]">
+                {{ translateType(req.type) }}
+              </span>
+              <div class="text-right">
+                <div class="text-sm font-mono font-black">{{ formatTime(req.status === 'completed' && req.updated_at ? req.updated_at : req.created_at) }}</div>
+              </div>
+            </div>
+            <div class="text-2xl font-black uppercase tracking-wide mb-2" :class="{ 'line-through decoration-4 decoration-black/30': req.status === 'completed' }">
+              {{ req.value }}
+            </div>
+            <div class="text-sm font-bold text-gray-900">
+              {{ req.user.full_name || 'Гість' }}
+            </div>
+            <a :href="'tel:+' + req.user.phone_number" class="text-sm text-blue-600 hover:underline font-bold block mb-2" @click.stop>
+              +{{ req.user.phone_number }}
+            </a>
+            <div v-if="req.status !== 'completed'" class="absolute bottom-4 right-4 w-10 h-10 bg-black text-white flex items-center justify-center rounded-full font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)]">➝</div>
+            <div v-else class="absolute bottom-4 right-4 w-10 h-10 border-2 border-gray-300 text-gray-400 flex items-center justify-center rounded-full font-black bg-gray-50">✓</div>
+          </div>
+          <div v-if="passRequests.length === 0" class="p-8 text-center bg-gray-50 text-lg font-black uppercase text-gray-400 border-4 border-dashed border-gray-300">Немає заявок</div>
+        </div>
       </div>
 
       <!-- TAB 2: PARKING -->
@@ -214,25 +243,25 @@
                 </td>
                 <td class="py-4 px-6 text-center">
                   <button v-if="req.status === 'new'"
-                          @click="handleIssueKeyfob(req)"
+                          @click="openParkingConfirm(req, 'issue_entry')"
                           :disabled="parkingStatus.keyfob.state === 'WITH_GUEST' || isSubmitting"
                           class="bg-green-600 text-white font-black uppercase text-xs px-3 py-2 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-y-0.5 hover:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                     🟢 Видати брелок
                   </button>
                   <button v-else-if="req.status === 'keyfob_issued_entry'"
-                          @click="handleReturnKeyfob(req)"
+                          @click="openParkingConfirm(req, 'return_entry')"
                           :disabled="isSubmitting"
                           class="bg-yellow-300 text-black font-black uppercase text-xs px-3 py-2 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-y-0.5 hover:shadow-none transition-all">
                     📥 Запарковано
                   </button>
                   <button v-else-if="req.status === 'parked'"
-                          @click="handleIssueKeyfob(req)"
+                          @click="openParkingConfirm(req, 'issue_exit')"
                           :disabled="parkingStatus.keyfob.state === 'WITH_GUEST' || isSubmitting"
                           class="bg-blue-600 text-white font-black uppercase text-xs px-3 py-2 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-y-0.5 hover:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                     🟢 Брелок на виїзд
                   </button>
                   <button v-else-if="req.status === 'keyfob_issued_exit'"
-                          @click="handleReturnKeyfob(req)"
+                          @click="openParkingConfirm(req, 'return_exit')"
                           :disabled="isSubmitting"
                           class="bg-green-600 text-white font-black uppercase text-xs px-3 py-2 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-y-0.5 hover:shadow-none transition-all">
                     📥 Виїхав
@@ -246,6 +275,55 @@
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- Mobile View: Parking -->
+        <div class="md:hidden space-y-4 mt-4">
+          <div v-for="req in sortedParkingRequests" :key="'p_mob_' + req.id"
+               class="bg-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4"
+               :class="{ 'opacity-60 grayscale': req.status === 'completed' || req.status === 'expired' }">
+            <div class="flex justify-between items-start mb-2">
+              <span class="text-[10px] font-extrabold uppercase px-2 py-1 border border-black rounded" :class="getParkingStatusClass(req.status)">
+                {{ getParkingStatusLabel(req.status) }}
+              </span>
+              <div class="text-sm font-mono font-black">{{ formatTime(req.created_at) }}</div>
+            </div>
+            <div class="text-2xl font-black uppercase tracking-wide mb-2" :class="{ 'line-through decoration-4 decoration-black/30': req.status === 'completed' || req.status === 'expired' }">
+              {{ req.license_plate }}
+            </div>
+            <div class="text-sm font-bold text-gray-900 mb-2">
+              {{ req.user.full_name || 'Гість' }} 
+              <a :href="'tel:+' + req.user.phone_number" class="text-blue-600 hover:underline inline-block ml-1">+{{ req.user.phone_number }}</a>
+            </div>
+            
+            <div class="mt-4 flex flex-col gap-2">
+                  <button v-if="req.status === 'new'"
+                          @click="openParkingConfirm(req, 'issue_entry')"
+                          :disabled="parkingStatus.keyfob.state === 'WITH_GUEST' || isSubmitting"
+                          class="w-full bg-green-600 text-white font-black uppercase text-sm px-4 py-3 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50 transition-all">
+                    🟢 Видати брелок
+                  </button>
+                  <button v-else-if="req.status === 'keyfob_issued_entry'"
+                          @click="openParkingConfirm(req, 'return_entry')"
+                          :disabled="isSubmitting"
+                          class="w-full bg-yellow-300 text-black font-black uppercase text-sm px-4 py-3 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50 transition-all">
+                    📥 Запарковано
+                  </button>
+                  <button v-else-if="req.status === 'parked'"
+                          @click="openParkingConfirm(req, 'issue_exit')"
+                          :disabled="parkingStatus.keyfob.state === 'WITH_GUEST' || isSubmitting"
+                          class="w-full bg-blue-600 text-white font-black uppercase text-sm px-4 py-3 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50 transition-all">
+                    🟢 Брелок на виїзд
+                  </button>
+                  <button v-else-if="req.status === 'keyfob_issued_exit'"
+                          @click="openParkingConfirm(req, 'return_exit')"
+                          :disabled="isSubmitting"
+                          class="w-full bg-green-600 text-white font-black uppercase text-sm px-4 py-3 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50 transition-all">
+                    📥 Виїхав
+                  </button>
+            </div>
+          </div>
+          <div v-if="parkingRequests.length === 0" class="p-8 text-center bg-gray-50 text-lg font-black uppercase text-gray-400 border-4 border-dashed border-gray-300">Немає заявок на парковку</div>
         </div>
       </div>
     </div>
@@ -264,6 +342,38 @@
           <button @click="selectedRequest = null" :disabled="isSubmitting" class="border-2 border-black py-4 font-black uppercase hover:bg-gray-200 transition-colors text-sm md:text-base disabled:opacity-50">Назад</button>
           <button @click="closeRequest" :disabled="isSubmitting" class="bg-green-600 text-white border-2 border-black py-4 font-black uppercase hover:bg-green-700 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-none transition-all text-sm md:text-base flex items-center justify-center disabled:opacity-70">
             {{ isSubmitting ? 'Обробка...' : 'Так, пропустив' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Parking Action Confirm Modal -->
+    <div v-if="selectedParkingRequest" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto" @click.self="selectedParkingRequest = null">
+      <div class="bg-white border-4 border-black p-6 md:p-8 max-w-md w-full shadow-[12px_12px_0px_0px_rgba(255,255,255,1)] relative my-8">
+        <button @click="selectedParkingRequest = null" :disabled="isSubmitting" class="absolute top-2 right-2 text-3xl font-bold hover:text-red-600 px-2 leading-none">&times;</button>
+        
+        <h2 v-if="parkingActionType === 'issue_entry' || parkingActionType === 'issue_exit'" class="text-2xl md:text-3xl font-black mb-6 uppercase border-b-4 border-green-400 inline-block">Видати брелок?</h2>
+        <h2 v-else class="text-2xl md:text-3xl font-black mb-6 uppercase border-b-4 border-yellow-300 inline-block">Повернути брелок?</h2>
+        
+        <div class="bg-gray-100 p-4 border-2 border-black mb-6 text-center">
+          <p class="text-xs text-gray-500 uppercase font-bold mb-1">Номер авто:</p>
+          <p class="text-3xl md:text-4xl font-black uppercase break-all">{{ selectedParkingRequest.license_plate }}</p>
+        </div>
+        
+        <p v-if="parkingActionType === 'issue_entry'" class="font-bold text-gray-700 mb-4 text-center">Підтвердіть, що ви фізично видали брелок гостю для заїзду.</p>
+        <p v-if="parkingActionType === 'return_entry'" class="font-bold text-gray-700 mb-4 text-center">Гість запаркувався. Підтвердіть, що брелок повернуто вам на пост.</p>
+        <p v-if="parkingActionType === 'issue_exit'" class="font-bold text-gray-700 mb-4 text-center">Підтвердіть, що ви видали брелок гостю для виїзду.</p>
+        <p v-if="parkingActionType === 'return_exit'" class="font-bold text-gray-700 mb-4 text-center">Гість виїхав. Підтвердіть, що ви забрали брелок.</p>
+
+        <div class="grid grid-cols-2 gap-4 mt-6">
+          <button @click="selectedParkingRequest = null" :disabled="isSubmitting" class="border-2 border-black py-4 font-black uppercase hover:bg-gray-200 transition-colors text-sm md:text-base disabled:opacity-50">Назад</button>
+          
+          <button v-if="parkingActionType.startsWith('issue')" @click="confirmParkingAction" :disabled="isSubmitting" class="bg-green-600 text-white border-2 border-black py-4 font-black uppercase hover:bg-green-700 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-none transition-all text-sm flex items-center justify-center disabled:opacity-70">
+            {{ isSubmitting ? 'Обробка...' : 'Так, видано' }}
+          </button>
+          
+          <button v-else @click="confirmParkingAction" :disabled="isSubmitting" class="bg-yellow-300 text-black border-2 border-black py-4 font-black uppercase hover:bg-yellow-400 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-none transition-all text-sm flex items-center justify-center disabled:opacity-70">
+            {{ isSubmitting ? 'Обробка...' : 'Так, забрано' }}
           </button>
         </div>
       </div>
@@ -300,6 +410,8 @@ const passRequests = ref([]);
 const parkingRequests = ref([]);
 const loading = ref(true);
 const selectedRequest = ref(null);
+const selectedParkingRequest = ref(null);
+const parkingActionType = ref('');
 const showResetModal = ref(false);
 const currentDate = ref('');
 let clockInterval = null;
@@ -418,24 +530,22 @@ const closeRequest = async () => {
   }
 };
 
-const handleIssueKeyfob = async (req) => {
-  if (isSubmitting.value) return;
-  isSubmitting.value = true;
-  try {
-    await parkingApi.issueKeyfob(req.id);
-    await fetchData();
-  } catch (e) {
-    alert(e.response?.data?.detail || "Помилка");
-  } finally {
-    isSubmitting.value = false;
-  }
+const openParkingConfirm = (req, type) => {
+  selectedParkingRequest.value = req;
+  parkingActionType.value = type;
 };
 
-const handleReturnKeyfob = async (req) => {
-  if (isSubmitting.value) return;
+const confirmParkingAction = async () => {
+  if (!selectedParkingRequest.value || isSubmitting.value) return;
   isSubmitting.value = true;
   try {
-    await parkingApi.returnKeyfob(req.id);
+    const isIssue = parkingActionType.value.startsWith('issue');
+    if (isIssue) {
+      await parkingApi.issueKeyfob(selectedParkingRequest.value.id);
+    } else {
+      await parkingApi.returnKeyfob(selectedParkingRequest.value.id);
+    }
+    selectedParkingRequest.value = null;
     await fetchData();
   } catch (e) {
     alert(e.response?.data?.detail || "Помилка");

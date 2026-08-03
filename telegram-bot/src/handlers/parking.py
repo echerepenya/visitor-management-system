@@ -27,28 +27,36 @@ async def cmd_back_to_main(message: Message, state: FSMContext):
 
 @router.message(F.text == "🅿️ Гостьова парковка")
 async def cmd_parking(message: Message, state: FSMContext):
-    # Fetch status first
-    status_resp = None
-    try:
-        response = await api_client.get("/telegram/parking/status")
-        if response.status_code == 200:
-            status_resp = response.json()
-    except Exception as e:
-        logger.error(f"Error fetching parking status: {e}")
-
-    if status_resp and status_resp.get("free_spots", 0) <= 0:
-        await message.answer("На жаль, наразі немає вільних гостьових паркомісць. Спробуйте пізніше.",
-                             reply_markup=kb_additional_services)
-        return
-
-    free_spots = status_resp.get("free_spots", 0) if status_resp else "?"
-
     await message.answer(
-        f"🅿️ **Гостьова парковка**\nВільних місць: **{free_spots}/11**\n\n"
-        "Введіть номер авто (без пробілів, лише букви та цифри):",
-        reply_markup=kb_cancel
+        "🚧 **Сервіс гостьової парковки на етапі тестування.**\n\n"
+        "Кнопка додана для підготовки та навчання охорони. "
+        "Повноцінний запуск відбудеться найближчим часом. Дякуємо за терпіння!",
+        reply_markup=kb_additional_services
     )
-    await state.set_state(ParkingState.waiting_for_plate)
+    return
+    
+    # Fetch status first
+    # status_resp = None
+    # try:
+    #     response = await api_client.get("/telegram/parking/status")
+    #     if response.status_code == 200:
+    #         status_resp = response.json()
+    # except Exception as e:
+    #     logger.error(f"Error fetching parking status: {e}")
+    # 
+    # if status_resp and status_resp.get("free_spots", 0) <= 0:
+    #     await message.answer("На жаль, наразі немає вільних гостьових паркомісць. Спробуйте пізніше.",
+    #                          reply_markup=kb_additional_services)
+    #     return
+    # 
+    # free_spots = status_resp.get("free_spots", 0) if status_resp else "?"
+    # 
+    # await message.answer(
+    #     f"🅿️ **Гостьова парковка**\nВільних місць: **{free_spots}/11**\n\n"
+    #     "Введіть номер авто (без пробілів, лише букви та цифри):",
+    #     reply_markup=kb_cancel
+    # )
+    # await state.set_state(ParkingState.waiting_for_plate)
 
 
 @router.message(ParkingState.waiting_for_plate)
