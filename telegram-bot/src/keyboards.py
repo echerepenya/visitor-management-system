@@ -31,7 +31,7 @@ kb_main = ReplyKeyboardMarkup(
 kb_additional_services = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="🅿️ Гостьова парковка")],
-        [KeyboardButton(text="ℹ️ Мій статус")],
+        [KeyboardButton(text="ℹ️ Мої дані")],
         [KeyboardButton(text="◀️ Головне меню")]
     ],
     resize_keyboard=True,

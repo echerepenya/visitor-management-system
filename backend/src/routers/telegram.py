@@ -15,7 +15,7 @@ from src.database import get_db, get_redis
 from src.models.apartment import Apartment
 from src.models.car import Car
 from src.models.request import GuestRequest, RequestType, RequestStatus
-from src.models.user import User, RoleEnum
+from src.models.user import User, UserRole
 from src.routers.requests import CreateRequestSchema
 from src.schemas.user import UserResponse
 from src.security import get_api_key
@@ -30,7 +30,7 @@ router = APIRouter(prefix="/api/telegram", tags=["Telegram"], dependencies=[Depe
 
 @router.get("/residents", response_model=list[int])
 async def get_residents_telegram_ids(db: AsyncSession = Depends(get_db)):
-    stmt = select(User.telegram_id).where(User.role == RoleEnum.resident, User.telegram_id.isnot(None))
+    stmt = select(User.telegram_id).where(User.role == UserRole.RESIDENT, User.telegram_id.isnot(None))
     result = await db.execute(stmt)
     return list(result.scalars().all())
 

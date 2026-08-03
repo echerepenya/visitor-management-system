@@ -53,7 +53,7 @@ async def cmd_contacts(message: Message):
         await message.answer("⚠️ Сервіс тимчасово недоступний.")
 
 
-@router.message(F.text == "ℹ️ Мій статус")
+@router.message(F.text == "ℹ️ Мої дані")
 async def cmd_me(message: Message):
     telegram_id = message.from_user.id
 
