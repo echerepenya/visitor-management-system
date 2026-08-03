@@ -21,7 +21,7 @@ async def cmd_additional_services(message: Message, state: FSMContext):
 
 @router.message(F.text == "◀️ Головне меню")
 async def cmd_back_to_main(message: Message, state: FSMContext):
-    await state.clear()
+    await state.set_state(None)
     await message.answer("Головне меню", reply_markup=kb_main)
 
 
@@ -62,7 +62,7 @@ async def cmd_parking(message: Message, state: FSMContext):
 @router.message(ParkingState.waiting_for_plate)
 async def process_parking_plate(message: Message, state: FSMContext):
     if message.text == "❌ Скасувати":
-        await state.clear()
+        await state.set_state(None)
         await message.answer("Скасовано.", reply_markup=kb_additional_services)
         return
 
@@ -96,4 +96,4 @@ async def process_parking_plate(message: Message, state: FSMContext):
         err = resp.get("detail", "Помилка") if isinstance(resp, dict) else "Помилка сервера"
         await message.answer(f"❌ Не вдалося створити заявку: {err}", reply_markup=kb_additional_services)
 
-    await state.clear()
+    await state.set_state(None)
