@@ -9,7 +9,7 @@ from aiogram.fsm.storage.redis import RedisStorage
 from redis.asyncio import Redis
 
 from src.config import settings
-from src.handlers import auth, passes, car_search, info
+from src.handlers import auth, passes, car_search, info, parking
 from src.logging_config import setup_logging
 from src.middleware import StateRecoveryMiddleware
 from src.services.stream_listener import listen_redis_stream
@@ -33,6 +33,7 @@ async def main():
     dp.include_router(auth.router)
     dp.include_router(passes.router)
     dp.include_router(info.router)
+    dp.include_router(parking.router)
     dp.include_router(car_search.router)
 
     stream_task = asyncio.create_task(
@@ -45,6 +46,8 @@ async def main():
     try:
         await dp.start_polling(bot)
     finally:
+        from src.api import api_client
+        await api_client.close()
         stream_task.cancel()
         await bot.session.close()
         await redis_client.close()

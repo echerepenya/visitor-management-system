@@ -37,6 +37,7 @@ class User(Base):
 
     cars = relationship("Car", back_populates="owner", cascade="all, delete-orphan", passive_deletes=True, foreign_keys="Car.owner_id")
     requests = relationship("GuestRequest", back_populates="user", cascade="all, delete-orphan", passive_deletes=True, foreign_keys="GuestRequest.user_id")
+    parking_requests = relationship("GuestParkingRequest", back_populates="user", cascade="all, delete-orphan", passive_deletes=True, foreign_keys="GuestParkingRequest.user_id")
     logs = relationship("UserActivityLog", back_populates="user", cascade="all, delete-orphan", passive_deletes=True)
 
     created_by = Column(Integer, ForeignKey("users.id", name='fk_' + __tablename__ + '_created_by_users', ondelete="SET NULL"), nullable=True)

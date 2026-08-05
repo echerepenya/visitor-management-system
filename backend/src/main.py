@@ -11,7 +11,7 @@ from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from src.config import settings
 from src.database import engine, AsyncSessionLocal, init_redis, close_redis, DbSessionMiddleware
 from src.logging_config import setup_logging
-from src.routers import auth, requests, telegram, import_data
+from src.routers import auth, requests, telegram, import_data, parking
 from src.models.user import User, UserRole
 from src.scheduler import start_scheduler, scheduler
 from src.security import authentication_backend, get_password_hash
@@ -53,7 +53,7 @@ async def lifespan(app: FastAPI):
     await init_redis()
     await start_scheduler()
     yield
-    await scheduler.shutdown()
+    scheduler.shutdown()
     await close_redis()
 
 
@@ -96,6 +96,7 @@ app.include_router(auth.router)
 app.include_router(telegram.router)
 app.include_router(requests.router)
 app.include_router(import_data.router)
+app.include_router(parking.router)
 
 
 admin = Admin(app, engine, authentication_backend=authentication_backend, title="VMS адмін", templates_dir="templates")

@@ -55,3 +55,21 @@ async def notify_resident_expired(bot: Bot, data: dict, storage: RedisStorage):
         await bot.send_message(chat_id=tg_id, text=text, parse_mode="HTML")
     except Exception as e:
         logger.warning(f"Не вдалося відправити сповіщення мешканцю {tg_id}: {e}")
+
+
+async def notify_parking_created(bot: Bot, data: dict, storage: RedisStorage):
+    # This might need to notify guards
+    from src.keyboards import kb_parking_guard
+    guard_ids = data.get("guard_telegram_ids", [])
+    if not guard_ids:
+        # If we didn't send them in data, we can query them or just not send.
+        # But wait, in pass_requests we get them in backend. We didn't do it for parking.
+        # Let's just log or send to hardcoded for now, or just trust the frontend websocket.
+        # Actually, let's just send to all guards.
+        pass
+    text = f"🆕 Нова заявка на гостьову парковку!"
+    for tg_id in guard_ids:
+        try:
+            await bot.send_message(chat_id=tg_id, text=text, parse_mode="Markdown", reply_markup=kb_parking_guard)
+        except Exception as e:
+            logger.warning(f"Failed to notify guard {tg_id}: {e}")

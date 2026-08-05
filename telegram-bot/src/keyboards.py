@@ -22,10 +22,20 @@ kb_auth = ReplyKeyboardMarkup(
 kb_main = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="🎫 Замовити перепустку")],
-        [KeyboardButton(text="👮 Контакти охорони"), KeyboardButton(text="ℹ️ Мій статус")]
+        [KeyboardButton(text="👮 Контакти охорони"), KeyboardButton(text="📂 Більше...")]
     ],
     resize_keyboard=True,
-    input_field_placeholder="Введіть номер авто для пошуку..."
+    input_field_placeholder="Оберіть дію..."
+)
+
+kb_additional_services = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="🅿️ Гостьова парковка")],
+        [KeyboardButton(text="ℹ️ Мої дані")],
+        [KeyboardButton(text="◀️ Головне меню")]
+    ],
+    resize_keyboard=True,
+    input_field_placeholder="Більше..."
 )
 
 kb_main_guard = ReplyKeyboardMarkup(
@@ -67,6 +77,19 @@ kb_guard_dashboard = InlineKeyboardMarkup(
     ],
     resize_keyboard=True
 )
+
+kb_parking_guard = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="🅿️ Відкрити парковку",
+                web_app=WebAppInfo(url=f"{login_url}?tab=parking")
+            )
+        ]
+    ],
+    resize_keyboard=True
+)
+
 
 
 # Car search keyboards
