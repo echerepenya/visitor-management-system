@@ -19,6 +19,7 @@ from src.admin.apartment_admin import ApartmentAdmin
 from src.admin.audit_log_admin import AuditLogAdmin
 from src.admin.building_admin import BuildingAdmin
 from src.admin.car_admin import CarAdmin
+from src.admin.parking_admin import GuestParkingAdmin
 from src.admin.request_admin import RequestAdmin
 from src.admin.user_admin import SuperUserAdmin, RestrictedUserAdmin
 from src.admin.dashboard import DashboardView
@@ -107,4 +108,5 @@ admin.add_view(RestrictedUserAdmin)
 admin.add_view(SuperUserAdmin)
 admin.add_view(CarAdmin)
 admin.add_view(RequestAdmin)
+admin.add_view(GuestParkingAdmin)
 admin.add_view(AuditLogAdmin)

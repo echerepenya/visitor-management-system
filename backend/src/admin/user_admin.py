@@ -28,8 +28,8 @@ class BaseUserAdmin(AuditMixin, ModelView):
 
     column_searchable_list = [User.phone_number]
 
-    column_list = ["phone_number", "full_name", "apartment", "role", "username", "is_admin", "is_superadmin", "is_resident_contact"]
-    form_columns = ["phone_number", "full_name", "apartment", "role", "username", "hashed_password", "is_admin", "is_superadmin", "is_resident_contact"]
+    column_list = ["phone_number", "full_name", "apartment", "role", "username", "is_admin", "is_superadmin", "is_resident_contact", "is_guest_parking_allowed"]
+    form_columns = ["phone_number", "full_name", "apartment", "role", "username", "hashed_password", "is_admin", "is_superadmin", "is_resident_contact", "is_guest_parking_allowed"]
 
     column_labels = {
         "phone_number": "Телефон",
@@ -37,6 +37,7 @@ class BaseUserAdmin(AuditMixin, ModelView):
         "apartment": "Квартира",
         "role": "Роль",
         "is_admin": "Адміністратор",
+        "is_guest_parking_allowed": "Гостьова парковка",
         "address_info": "Адреса"
     }
 
@@ -205,8 +206,8 @@ class SuperUserAdmin(BaseUserAdmin, model=User):
 
     can_export = True
 
-    column_list = ["phone_number", "full_name", "apartment", "role", "username", "is_admin", "is_superadmin", "is_resident_contact", "is_deleted"]
-    form_columns = ["phone_number", "full_name", "apartment", "role", "username", "hashed_password", "is_admin", "is_superadmin", "is_resident_contact", "is_deleted"]
+    column_list = ["phone_number", "full_name", "apartment", "role", "username", "is_admin", "is_superadmin", "is_resident_contact", "is_guest_parking_allowed", "is_deleted"]
+    form_columns = ["phone_number", "full_name", "apartment", "role", "username", "hashed_password", "is_admin", "is_superadmin", "is_resident_contact", "is_guest_parking_allowed", "is_deleted"]
 
     column_formatters = {
         "apartment": lambda m, a: str(m.apartment) if m.apartment else "-"

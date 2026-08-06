@@ -17,6 +17,7 @@ class UserBase(BaseModel):
     is_admin: Optional[bool] = False
     is_superadmin: Optional[bool] = False
     is_resident_contact: Optional[bool] = False
+    is_guest_parking_allowed: bool = False
     is_deleted: bool = False
 
     class Config:

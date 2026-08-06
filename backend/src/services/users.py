@@ -13,6 +13,7 @@ from src.models.user import User, UserRole
 from src.models.user_activity_log import UserActivityLog
 from src.schemas.car import CarResponse
 from src.schemas.user import UserResponse, UserBase
+from src.schemas.apartment import Apartment as ApartmentSchema
 
 
 async def get_user_by_telegram_id(telegram_id: int, db: AsyncSession) -> UserResponse | None:
@@ -47,6 +48,7 @@ async def get_user_by_telegram_id(telegram_id: int, db: AsyncSession) -> UserRes
 
     return UserResponse(
         id=user.id,
+        telegram_id=user.telegram_id,
         phone_number=user.phone_number,
         role=user.role.value,
         full_name=user.full_name,
@@ -54,6 +56,10 @@ async def get_user_by_telegram_id(telegram_id: int, db: AsyncSession) -> UserRes
         apartment_number=str(user.apartment.number) if user.apartment else None,
         is_admin=user.is_admin,
         is_superadmin=user.is_superadmin,
+        is_guest_parking_allowed=user.is_guest_parking_allowed,
+        is_resident_contact=user.is_resident_contact,
+        is_deleted=user.is_deleted,
+        apartment=ApartmentSchema.model_validate(user.apartment) if user.apartment else None,
         cars=[
             CarResponse(
                 id=car.id,
@@ -64,10 +70,16 @@ async def get_user_by_telegram_id(telegram_id: int, db: AsyncSession) -> UserRes
         ],
         cohabitants=[
             UserBase(
+                telegram_id=cohabitant.telegram_id,
                 phone_number=cohabitant.phone_number,
                 role=cohabitant.role.value,
                 full_name=cohabitant.full_name,
-                apartment=cohabitant.apartment
+                apartment=ApartmentSchema.model_validate(cohabitant.apartment) if cohabitant.apartment else None,
+                is_admin=cohabitant.is_admin,
+                is_superadmin=cohabitant.is_superadmin,
+                is_guest_parking_allowed=cohabitant.is_guest_parking_allowed,
+                is_resident_contact=cohabitant.is_resident_contact,
+                is_deleted=cohabitant.is_deleted
             ) for cohabitant in cohabitants
         ],
         created_at=user.created_at,
