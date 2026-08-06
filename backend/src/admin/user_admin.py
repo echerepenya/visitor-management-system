@@ -26,7 +26,7 @@ class BaseUserAdmin(AuditMixin, ModelView):
     page_size = 25
     page_size_options = [25, 50, 100, 200]
 
-    column_searchable_list = [User.phone_number]
+    column_searchable_list = [User.phone_number, User.full_name]
 
     column_list = ["phone_number", "full_name", "apartment", "role", "username", "is_admin", "is_superadmin", "is_resident_contact", "is_guest_parking_allowed"]
     form_columns = ["phone_number", "full_name", "apartment", "role", "username", "hashed_password", "is_admin", "is_superadmin", "is_resident_contact", "is_guest_parking_allowed"]
@@ -178,8 +178,8 @@ class RestrictedUserAdmin(BaseUserAdmin, model=RestrictedUser):
     name = "Користувач"
     name_plural = "Користувачі"
 
-    column_list = ["phone_number", "full_name", "address_info", "role", "is_admin"]
-    form_columns = ["phone_number", "full_name", "apartment", "role"]
+    column_list = ["phone_number", "full_name", "address_info", "role", "is_admin", "is_guest_parking_allowed"]
+    form_columns = ["phone_number", "full_name", "apartment", "role", "is_guest_parking_allowed"]
 
     column_formatters = {
         "address_info": lambda m, a: str(m.apartment) if m.apartment else "-"
