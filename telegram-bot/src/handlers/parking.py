@@ -32,13 +32,9 @@ async def cmd_parking(message: Message, state: FSMContext):
         me_resp = await api_client.post("/telegram/get-me", json={"telegram_id": message.from_user.id})
         if me_resp.status_code == 200:
             user_data = me_resp.json()
-            print(user_data)
-
             is_allowed = user_data.get("is_guest_parking_allowed", False)
     except Exception as e:
         logger.error(f"Error fetching user data: {e}")
-
-    print('is_guest_parking_allowed: ', is_allowed)
 
     if not is_allowed:
         await message.answer(
