@@ -33,12 +33,12 @@
     <div class="flex space-x-2 md:space-x-4 mb-6">
       <button @click="activeTab = 'passes'"
               :class="activeTab === 'passes' ? 'bg-black text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'bg-white text-black border-2 border-black hover:bg-gray-100'"
-              class="flex-1 md:flex-none font-black uppercase text-sm md:text-base px-4 py-3 transition-all rounded">
+              class="flex-1 md:flex-none font-black uppercase text-xs md:text-sm px-3 py-2 transition-all rounded">
         🎫 Перепустки
       </button>
       <button @click="activeTab = 'parking'"
               :class="activeTab === 'parking' ? 'bg-black text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'bg-white text-black border-2 border-black hover:bg-gray-100'"
-              class="flex-1 md:flex-none font-black uppercase text-sm md:text-base px-4 py-3 transition-all rounded">
+              class="flex-1 md:flex-none font-black uppercase text-xs md:text-sm px-3 py-2 transition-all rounded">
         🅿️ Гостьова Парковка
       </button>
     </div>
@@ -138,9 +138,13 @@
             <div class="text-sm font-bold text-gray-900">
               {{ req.user.full_name || 'Гість' }}
             </div>
-            <a :href="'tel:+' + req.user.phone_number" class="text-sm text-blue-600 hover:underline font-bold block mb-2" @click.stop>
+            <a :href="'tel:+' + req.user.phone_number" class="text-sm text-blue-600 hover:underline font-bold block" @click.stop>
               +{{ req.user.phone_number }}
             </a>
+            <div v-if="req.user.apartment" class="text-xs text-gray-500 mt-1 font-medium mb-2">
+              {{ req.user.apartment.building.address }}, кв. {{ req.user.apartment.number }}
+            </div>
+            <div v-else class="text-xs text-gray-400 mt-1 font-medium mb-2">Адреса не вказана</div>
             <div v-if="req.status !== 'completed'" class="absolute bottom-4 right-4 w-10 h-10 bg-black text-white flex items-center justify-center rounded-full font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)]">➝</div>
             <div v-else class="absolute bottom-4 right-4 w-10 h-10 border-2 border-gray-300 text-gray-400 flex items-center justify-center rounded-full font-black bg-gray-50">✓</div>
           </div>
@@ -235,6 +239,10 @@
                     <a :href="'tel:+' + req.user.phone_number" class="text-sm text-blue-600 hover:text-blue-800 hover:underline font-bold w-max">
                       +{{ req.user.phone_number }}
                     </a>
+                    <span v-if="req.user.apartment" class="text-xs text-gray-500 mt-1 font-medium">
+                      {{ req.user.apartment.building.address }}, кв. {{ req.user.apartment.number }}
+                    </span>
+                    <span v-else class="text-xs text-gray-400 mt-1 font-medium">Адреса не вказана</span>
                   </div>
                 </td>
                 <td class="py-4 px-6 border-r-2 border-gray-100 text-right">
@@ -291,10 +299,14 @@
             <div class="text-2xl font-black uppercase tracking-wide mb-2" :class="{ 'line-through decoration-4 decoration-black/30': req.status === 'completed' || req.status === 'expired' }">
               {{ req.license_plate }}
             </div>
-            <div class="text-sm font-bold text-gray-900 mb-2">
+            <div class="text-sm font-bold text-gray-900">
               {{ req.user.full_name || 'Гість' }} 
               <a :href="'tel:+' + req.user.phone_number" class="text-blue-600 hover:underline inline-block ml-1">+{{ req.user.phone_number }}</a>
             </div>
+            <div v-if="req.user.apartment" class="text-xs text-gray-500 mt-1 font-medium mb-2">
+              {{ req.user.apartment.building.address }}, кв. {{ req.user.apartment.number }}
+            </div>
+            <div v-else class="text-xs text-gray-400 mt-1 font-medium mb-2">Адреса не вказана</div>
             
             <div class="mt-4 flex flex-col gap-2">
                   <button v-if="req.status === 'new'"
