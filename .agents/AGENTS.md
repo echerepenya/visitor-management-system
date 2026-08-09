@@ -1,4 +1,4 @@
-# ANTIGRAVITY.md
+# AGENTS.md
 
 Цей файл містить основні відомості про проєкт Visitor Management System (VMS) та інструкції для AI-агентів, які працюють з кодовою базою.
 
