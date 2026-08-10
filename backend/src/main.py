@@ -11,7 +11,7 @@ from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from src.config import settings
 from src.database import engine, AsyncSessionLocal, init_redis, close_redis, DbSessionMiddleware
 from src.logging_config import setup_logging
-from src.routers import auth, requests, telegram, import_data
+from src.routers import auth, requests, telegram, import_data, parking
 from src.models.user import User, UserRole
 from src.scheduler import start_scheduler, scheduler
 from src.security import authentication_backend, get_password_hash
@@ -19,6 +19,7 @@ from src.admin.apartment_admin import ApartmentAdmin
 from src.admin.audit_log_admin import AuditLogAdmin
 from src.admin.building_admin import BuildingAdmin
 from src.admin.car_admin import CarAdmin
+from src.admin.parking_admin import GuestParkingAdmin
 from src.admin.request_admin import RequestAdmin
 from src.admin.user_admin import SuperUserAdmin, RestrictedUserAdmin
 from src.admin.dashboard import DashboardView
@@ -53,7 +54,7 @@ async def lifespan(app: FastAPI):
     await init_redis()
     await start_scheduler()
     yield
-    await scheduler.shutdown()
+    scheduler.shutdown()
     await close_redis()
 
 
@@ -96,6 +97,7 @@ app.include_router(auth.router)
 app.include_router(telegram.router)
 app.include_router(requests.router)
 app.include_router(import_data.router)
+app.include_router(parking.router)
 
 
 admin = Admin(app, engine, authentication_backend=authentication_backend, title="VMS адмін", templates_dir="templates")
@@ -106,4 +108,5 @@ admin.add_view(RestrictedUserAdmin)
 admin.add_view(SuperUserAdmin)
 admin.add_view(CarAdmin)
 admin.add_view(RequestAdmin)
+admin.add_view(GuestParkingAdmin)
 admin.add_view(AuditLogAdmin)

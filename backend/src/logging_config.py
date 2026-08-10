@@ -3,6 +3,9 @@ import os
 
 
 def setup_logging():
+    if getattr(setup_logging, "_has_run", False):
+        return
+    setup_logging._has_run = True
     os.makedirs("logs", exist_ok=True)
 
     logging_config = {
@@ -33,7 +36,11 @@ def setup_logging():
             "": {
                 "handlers": ["console", "file"],
                 "level": "INFO",
-                "propagate": True
+            },
+            "src": {
+                "handlers": ["console", "file"],
+                "level": "INFO",
+                "propagate": False
             },
             "aiogram": {"level": "INFO"},
             "apscheduler.executors.default": {"level": "WARNING"},

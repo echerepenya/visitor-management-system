@@ -15,7 +15,7 @@ from src.database import get_db, get_redis
 from src.models.apartment import Apartment
 from src.models.car import Car
 from src.models.request import GuestRequest, RequestType, RequestStatus
-from src.models.user import User
+from src.models.user import User, UserRole
 from src.routers.requests import CreateRequestSchema
 from src.schemas.user import UserResponse
 from src.security import get_api_key
@@ -26,6 +26,13 @@ from src.utils import normalize_plate, normalize_phone
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/telegram", tags=["Telegram"], dependencies=[Depends(get_api_key)])
+
+
+@router.get("/residents", response_model=list[int])
+async def get_residents_telegram_ids(db: AsyncSession = Depends(get_db)):
+    stmt = select(User.telegram_id).where(User.role == UserRole.RESIDENT, User.telegram_id.isnot(None))
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
 
 
 class TelegramLoginSchema(BaseModel):
@@ -309,3 +316,33 @@ async def log_peer_message(payload: TelegramPeerMessageSchema, db: AsyncSession 
     await log_user_activity(db, sender.id, "sent_peer_message", details)
     return {"status": "logged"}
 
+
+from src.schemas.parking import GuestParkingRequestCreate
+from src.services.parking import get_parking_status, create_parking_request
+from src.redis import publish_event
+
+@router.get("/parking/status")
+async def telegram_parking_status(db: AsyncSession = Depends(get_db)):
+    return await get_parking_status(db)
+
+@router.post("/parking/create-request")
+async def telegram_create_parking_request(payload: TelegramRequestSchema, plate: str = Query(...), db: AsyncSession = Depends(get_db)):
+    user = await get_user_by_telegram_id(payload.telegram_id, db)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        
+    req_data = GuestParkingRequestCreate(license_plate=plate)
+    try:
+        new_req = await create_parking_request(db, req_data, user.id)
+        
+        # Get guards for notification
+        guards = await get_resident_contact_guard_users(db)
+        guard_ids = [g.telegram_id for g in guards if g.telegram_id]
+        
+        await publish_event("new_parking_request", {
+            "request_id": new_req.id,
+            "guard_telegram_ids": guard_ids
+        })
+        return {"status": "ok", "request_id": new_req.id}
+    except HTTPException as e:
+        raise e

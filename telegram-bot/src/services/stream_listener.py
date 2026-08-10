@@ -8,7 +8,7 @@ from redis.exceptions import ResponseError
 
 from src.config import settings
 from src.handlers.auth import force_logout_user
-from src.handlers.notify import notify_guards, notify_resident_closed, notify_resident_expired
+from src.handlers.notify import notify_guards, notify_resident_closed, notify_resident_expired, notify_parking_created
 
 STREAM_NAME = "vms_stream"
 GROUP_NAME = "bot_workers"
@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 handlers = {
     "new_guest_request": notify_guards,
+    "new_parking_request": notify_parking_created,
     "request_closed": notify_resident_closed,
     "request_expired": notify_resident_expired,
     "user_deleted": force_logout_user
@@ -26,6 +27,9 @@ handlers = {
 async def handle_event(bot, data, storage):
     event = data.get('event')
     handler = handlers.get(event)
+
+    if event in ["parking_requests_updated"]:
+        return
 
     if not handler:
         logger.warning(f"Невідомий тип події: {event}")

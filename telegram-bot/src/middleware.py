@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Callable, Awaitable
 
-import httpx
+from src.api import api_client
 from aiogram import BaseMiddleware
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
@@ -47,13 +47,10 @@ class StateRecoveryMiddleware(BaseMiddleware):
             return await handler(event, data)
 
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    f"{settings.API_URL}/telegram/get-me",
-                    json={"telegram_id": user.id},
-                    headers=settings.HEADERS,
-                    timeout=5.0,
-                )
+            response = await api_client.post(
+                "/telegram/get-me",
+                json={"telegram_id": user.id},
+            )
 
             if response.status_code == 200:
                 payload = response.json()

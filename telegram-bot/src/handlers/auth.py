@@ -1,6 +1,7 @@
 import logging
 
 import httpx
+from src.api import api_client
 from aiogram import Router, F, Bot
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
@@ -65,56 +66,55 @@ async def handle_contact(message: Message, state: FSMContext):
 
     await message.answer("⏳ Перевіряю в базі...")
 
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.post(f"{settings.API_URL}/telegram/login", json=payload, headers=settings.HEADERS, timeout=10.0)
+    try:
+        response = await api_client.post("/telegram/login", json=payload)
 
-            if response.status_code == 200:
-                data = response.json()
-                role = data.get('role')
+        if response.status_code == 200:
+            data = response.json()
+            role = data.get('role')
 
-                await state.update_data(
-                    role=role,
-                    name=data.get('name'),
-                    is_admin=data.get('is_admin'),
-                    telegram_id=message.from_user.id
+            await state.update_data(
+                role=role,
+                name=data.get('name'),
+                is_admin=data.get('is_admin'),
+                telegram_id=message.from_user.id
+            )
+
+            if role == 'guard':
+                await message.answer(
+                    f"✅ **Авторизація успішна!**\n\n"
+                    f"👤 **{data.get('name')}**",
+                    reply_markup=kb_main_guard
                 )
 
-                if role == 'guard':
-                    await message.answer(
-                        f"✅ **Авторизація успішна!**\n\n"
-                        f"👤 **{data.get('name')}**",
-                        reply_markup=kb_main_guard
-                    )
-
-                    await message.answer(
-                        f"Ви увійшли як співробітник охоронної компанії. Вводьте текст в поле нижче щоб перевірити авто по номеру, "
-                        f"та використовуйте кнопку меню для переходу на сторінку з заявками.",
-                        reply_markup=kb_guard_dashboard
-                    )
-                else:
-                    await message.answer(
-                        f"✅ **Авторизація успішна!**\n\n"
-                        f"👤 **{data.get('name')}**\n"
-                        f"🏠 {data.get('apartment')}\n\n"
-                        f"Тепер ви можете:\n"
-                        f"🔹 Вводити номер авто для перевірки\n"
-                        f"🔹 Створювати заявки на пропуск гостей",
-                        reply_markup=kb_main
-                    )
-            elif response.status_code == 404:
                 await message.answer(
-                    "❌ **Ваш номер не знайдено в базі мешканців.**\n\n"
-                    "Будь ласка, зверніться до ініціативної групи вашого будинку або охорони, щоб додати ваш номер телефону в систему.",
-                    reply_markup=ReplyKeyboardRemove()
+                    f"Ви увійшли як співробітник охоронної компанії. Вводьте текст в поле нижче щоб перевірити авто по номеру, "
+                    f"та використовуйте кнопку меню для переходу на сторінку з заявками.",
+                    reply_markup=kb_guard_dashboard
                 )
             else:
-                logger.error(f"Login error for {message.from_user.id}: {response.status_code} {response.text}")
-                await message.answer("⚠️ Помилка сервера. Спробуйте пізніше.")
+                await message.answer(
+                    f"✅ **Авторизація успішна!**\n\n"
+                    f"👤 **{data.get('name')}**\n"
+                    f"🏠 {data.get('apartment')}\n\n"
+                    f"Тепер ви можете:\n"
+                    f"🔹 Вводити номер авто для перевірки\n"
+                    f"🔹 Створювати заявки на пропуск гостей",
+                    reply_markup=kb_main
+                )
+        elif response.status_code == 404:
+            await message.answer(
+                "❌ **Ваш номер не знайдено в базі мешканців.**\n\n"
+                "Будь ласка, зверніться до ініціативної групи вашого будинку або охорони, щоб додати ваш номер телефону в систему.",
+                reply_markup=ReplyKeyboardRemove()
+            )
+        else:
+            logger.error(f"Login error for {message.from_user.id}: {response.status_code} {response.text}")
+            await message.answer("⚠️ Помилка сервера. Спробуйте пізніше.")
 
-        except httpx.RequestError as e:
-            logger.error(f"Connection error for {message.from_user.id}: {e}")
-            await message.answer("⚠️ Помилка з'єднання. Спробуйте пізніше.")
+    except httpx.RequestError as e:
+        logger.error(f"Connection error for {message.from_user.id}: {e}")
+        await message.answer("⚠️ Помилка з'єднання. Спробуйте пізніше.")
 
 
 async def force_logout_user(bot: Bot, data: dict, storage: RedisStorage):

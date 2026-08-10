@@ -31,12 +31,14 @@ class User(Base):
     is_admin = Column(Boolean, default=False, nullable=False)  # access to admin panel, allowed to create/edit residents and guards
     is_superadmin = Column(Boolean, default=False, nullable=False)  # allows to create/edit all type users, buildings, apartments
     is_resident_contact = Column(Boolean, default=False, nullable=False)
+    is_guest_parking_allowed = Column(Boolean, default=False, server_default="false", nullable=False)
 
     apartment_id = Column(Integer, ForeignKey("apartments.id"), nullable=True)
     apartment = relationship("Apartment", back_populates="residents", lazy="selectin", enable_typechecks=False)
 
     cars = relationship("Car", back_populates="owner", cascade="all, delete-orphan", passive_deletes=True, foreign_keys="Car.owner_id")
     requests = relationship("GuestRequest", back_populates="user", cascade="all, delete-orphan", passive_deletes=True, foreign_keys="GuestRequest.user_id")
+    parking_requests = relationship("GuestParkingRequest", back_populates="user", cascade="all, delete-orphan", passive_deletes=True, foreign_keys="GuestParkingRequest.user_id")
     logs = relationship("UserActivityLog", back_populates="user", cascade="all, delete-orphan", passive_deletes=True)
 
     created_by = Column(Integer, ForeignKey("users.id", name='fk_' + __tablename__ + '_created_by_users', ondelete="SET NULL"), nullable=True)
