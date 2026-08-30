@@ -5,12 +5,11 @@ from sqlalchemy import func
 from datetime import datetime, timezone, timedelta
 from fastapi import HTTPException
 
-from src.models.parking import GuestParkingRequest, ParkingStatus, KeyfobStatus, KeyfobState, ParkingSettings
+from src.models.parking import GuestParkingRequest, ParkingStatus, KeyfobStatus, KeyfobState
+from src.models.system_settings import SystemSettings
 from src.models.user import User
 from src.models.apartment import Apartment
 from src.schemas.parking import GuestParkingRequestCreate, ParkingDashboardStatus, KeyfobStatusOut, KeyfobGuestInfo
-
-PARKING_SPOTS = 11
 
 async def get_active_parking_requests(db: AsyncSession):
     stmt = select(GuestParkingRequest).where(
@@ -42,12 +41,12 @@ async def get_all_dashboard_requests(db: AsyncSession):
     result = await db.execute(stmt)
     return result.scalars().all()
 
-async def get_parking_settings(db: AsyncSession) -> ParkingSettings:
-    stmt = select(ParkingSettings).where(ParkingSettings.id == 1)
+async def get_system_settings(db: AsyncSession) -> SystemSettings:
+    stmt = select(SystemSettings).where(SystemSettings.id == 1)
     result = await db.execute(stmt)
     settings = result.scalars().first()
     if not settings:
-        settings = ParkingSettings(id=1, spots_offset=0)
+        settings = SystemSettings(id=1, guest_parking_spots=11, guest_parking_spots_offset=0)
         db.add(settings)
         await db.commit()
         await db.refresh(settings)
@@ -57,9 +56,9 @@ async def get_parking_status(db: AsyncSession) -> ParkingDashboardStatus:
     active_requests = await get_active_parking_requests(db)
     occupied = len(active_requests)
     
-    settings = await get_parking_settings(db)
-    calculated_free = PARKING_SPOTS - occupied
-    free = max(0, min(PARKING_SPOTS, calculated_free + settings.spots_offset))
+    settings = await get_system_settings(db)
+    calculated_free = settings.guest_parking_spots - occupied
+    free = max(0, min(settings.guest_parking_spots, calculated_free + settings.guest_parking_spots_offset))
 
     
     # Get Keyfob status
@@ -112,10 +111,19 @@ async def get_parking_status(db: AsyncSession) -> ParkingDashboardStatus:
         guest_info=guest_info
     )
 
+    guard_post_name = "Пост охорони"
+    if settings.guest_parking_post_id:
+        post_stmt = select(User).where(User.id == settings.guest_parking_post_id)
+        post_res = await db.execute(post_stmt)
+        post_user = post_res.scalars().first()
+        if post_user:
+            guard_post_name = post_user.full_name or post_user.username or "Пост охорони"
+
     return ParkingDashboardStatus(
-        total_spots=PARKING_SPOTS,
+        total_spots=settings.guest_parking_spots,
         occupied_spots=occupied,
         free_spots=free,
+        guard_post_name=guard_post_name,
         keyfob=keyfob_out
     )
 
@@ -237,12 +245,13 @@ async def check_expired_parking_requests(db: AsyncSession):
 async def override_free_spots(db: AsyncSession, new_free_spots: int):
     active_requests = await get_active_parking_requests(db)
     occupied = len(active_requests)
-    calculated_free = PARKING_SPOTS - occupied
+    settings = await get_system_settings(db)
+    
+    calculated_free = settings.guest_parking_spots - occupied
     
     offset = new_free_spots - calculated_free
     
-    settings = await get_parking_settings(db)
-    settings.spots_offset = offset
+    settings.guest_parking_spots_offset = offset
     await db.commit()
     
     return await get_parking_status(db)

@@ -55,8 +55,9 @@ async def cmd_parking(message: Message, state: FSMContext):
         logger.error(f"Error fetching parking status: {e}")
     
     if status_resp and status_resp.get("free_spots", 0) <= 0:
+        await state.set_state(None)
         await message.answer("На жаль, наразі немає вільних гостьових паркомісць. Спробуйте пізніше.",
-                             reply_markup=kb_additional_services)
+                             reply_markup=kb_main)
         return
     
     free_spots = status_resp.get("free_spots", 0) if status_resp else "?"
@@ -97,9 +98,10 @@ async def process_parking_plate(message: Message, state: FSMContext):
         resp = {"detail": "Помилка з'єднання"}
 
     if resp and resp.get("status") == "ok":
+        guard_post_name = resp.get("guard_post_name", "охорони")
         await message.answer(
             f"✅ Місце для авто **{plate}** заброньовано на 30 хвилин!\n\n"
-            "Зверніться до охорони (Пост 2) для отримання брелока від шлагбаума.",
+            f"Зверніться до {guard_post_name} для отримання брелока від шлагбаума.",
             reply_markup=kb_main
         )
     else:

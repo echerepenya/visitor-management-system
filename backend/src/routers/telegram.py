@@ -318,7 +318,7 @@ async def log_peer_message(payload: TelegramPeerMessageSchema, db: AsyncSession 
 
 
 from src.schemas.parking import GuestParkingRequestCreate
-from src.services.parking import get_parking_status, create_parking_request
+from src.services.parking import get_parking_status, create_parking_request, get_system_settings
 from src.redis import publish_event
 
 @router.get("/parking/status")
@@ -335,14 +335,27 @@ async def telegram_create_parking_request(payload: TelegramRequestSchema, plate:
     try:
         new_req = await create_parking_request(db, req_data, user.id)
         
-        # Get guards for notification
-        guards = await get_resident_contact_guard_users(db)
-        guard_ids = [g.telegram_id for g in guards if g.telegram_id]
+        settings = await get_system_settings(db)
+        
+        guard_post_name = "охорони"
+        guard_ids = []
+        if settings.guest_parking_post_id:
+            stmt = select(User).where(User.id == settings.guest_parking_post_id)
+            res = await db.execute(stmt)
+            post_user = res.scalar_one_or_none()
+            if post_user:
+                guard_post_name = post_user.full_name or post_user.username or "охорони"
+                if post_user.telegram_id:
+                    guard_ids.append(post_user.telegram_id)
+        else:
+            # Fallback to all resident contact guards if not configured
+            guards = await get_resident_contact_guard_users(db)
+            guard_ids = [g.telegram_id for g in guards if g.telegram_id]
         
         await publish_event("new_parking_request", {
             "request_id": new_req.id,
             "guard_telegram_ids": guard_ids
         })
-        return {"status": "ok", "request_id": new_req.id}
+        return {"status": "ok", "request_id": new_req.id, "guard_post_name": guard_post_name}
     except HTTPException as e:
         raise e

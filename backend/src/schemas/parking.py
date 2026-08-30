@@ -37,4 +37,5 @@ class ParkingDashboardStatus(BaseModel):
     total_spots: int
     occupied_spots: int
     free_spots: int
+    guard_post_name: str
     keyfob: KeyfobStatusOut

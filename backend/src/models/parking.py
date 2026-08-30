@@ -39,8 +39,3 @@ class KeyfobStatus(Base):
     
     current_request = relationship("GuestParkingRequest", back_populates="keyfob")
 
-class ParkingSettings(Base):
-    __tablename__ = "parking_settings"
-
-    id = Column(Integer, primary_key=True)
-    spots_offset = Column(Integer, default=0)

@@ -185,7 +185,7 @@
               <div class="flex items-center gap-2">
                 <span class="text-2xl">🔑</span>
                 <span class="font-black uppercase tracking-wide text-lg">
-                  {{ parkingStatus.keyfob.state === 'WITH_GUARD' ? 'Брелок на Посту 2' : 'Брелок видано гостю' }}
+                  {{ parkingStatus.keyfob.state === 'WITH_GUARD' ? 'Брелок у: ' + (parkingStatus.guard_post_name || 'Пост охорони') : 'Брелок видано гостю' }}
                 </span>
                 <span v-if="parkingStatus.keyfob.overdue" class="bg-black text-white text-xs font-black uppercase px-2 py-1 rounded border border-white">
                   ⚠️ УВАГА! > 30 хв
@@ -197,11 +197,6 @@
               </p>
               <p v-else class="text-xs font-medium opacity-90 mt-1">Брелок вільний для видачі наступній машині.</p>
             </div>
-            <button v-if="parkingStatus.keyfob.state === 'WITH_GUEST'"
-                    @click="showResetModal = true"
-                    class="bg-black text-white hover:bg-gray-800 font-black uppercase text-xs px-3 py-2 border-2 border-white shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] transition-all whitespace-nowrap">
-              ⚠️ Скинути брелок
-            </button>
           </div>
         </div>
 
@@ -391,17 +386,7 @@
       </div>
     </div>
 
-    <!-- Emergency Keyfob Reset Modal -->
-    <div v-if="showResetModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50" @click.self="showResetModal = false">
-      <div class="bg-white border-4 border-black p-6 max-w-md w-full shadow-[12px_12px_0px_0px_rgba(255,255,255,1)] relative">
-        <h2 class="text-2xl font-black mb-4 uppercase text-red-600 border-b-4 border-red-600 inline-block">⚠️ Скинути стан брелока?</h2>
-        <p class="font-bold text-gray-800 mb-6 text-sm">Ця дія примусово поверне брелок у стан «На Посту 2». Використовуйте тільки якщо брелок повернули в обхід системи чи відбувся збій.</p>
-        <div class="grid grid-cols-2 gap-4">
-          <button @click="showResetModal = false" :disabled="isSubmitting" class="border-2 border-black py-3 font-black uppercase hover:bg-gray-200 text-sm">Скасувати</button>
-          <button @click="handleResetKeyfob" :disabled="isSubmitting" class="bg-red-600 text-white border-2 border-black py-3 font-black uppercase hover:bg-red-700 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-none text-sm">Скинути</button>
-        </div>
-      </div>
-    </div>
+    <!-- (Emergency Reset Modal removed) -->
   </div>
 </template>
 
@@ -424,12 +409,11 @@ const loading = ref(true);
 const selectedRequest = ref(null);
 const selectedParkingRequest = ref(null);
 const parkingActionType = ref('');
-const showResetModal = ref(false);
 const currentDate = ref('');
 let clockInterval = null;
 
 const parkingStatus = ref({
-  total_spots: 11, occupied_spots: 0, free_spots: 11,
+  total_spots: 11, occupied_spots: 0, free_spots: 11, guard_post_name: 'Пост охорони',
   keyfob: { state: 'WITH_GUARD', request_id: null, issued_at: null, overdue: false, guest_info: null }
 });
 
@@ -566,19 +550,7 @@ const confirmParkingAction = async () => {
   }
 };
 
-const handleResetKeyfob = async () => {
-  if (isSubmitting.value) return;
-  isSubmitting.value = true;
-  try {
-    await parkingApi.resetKeyfob();
-    showResetModal.value = false;
-    await fetchData();
-  } catch (e) {
-    alert(e.response?.data?.detail || "Помилка");
-  } finally {
-    isSubmitting.value = false;
-  }
-};
+
 
 const openConfirm = (req) => {
   if (req.status !== 'new') return;
