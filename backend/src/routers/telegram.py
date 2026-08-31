@@ -331,7 +331,8 @@ async def telegram_create_parking_request(payload: TelegramRequestSchema, plate:
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
         
-    req_data = GuestParkingRequestCreate(license_plate=plate)
+    clean_plate = normalize_plate(plate)
+    req_data = GuestParkingRequestCreate(license_plate=clean_plate)
     try:
         new_req = await create_parking_request(db, req_data, user.id)
         

@@ -64,7 +64,7 @@ async def cmd_parking(message: Message, state: FSMContext):
     
     await message.answer(
         f"🅿️ **Гостьова парковка**\nВільних місць: **{free_spots}/11**\n\n"
-        "Введіть номер авто (без пробілів, лише букви та цифри):",
+        "✍️ Введіть **номер авто**:",
         reply_markup=kb_cancel
     )
     await state.set_state(ParkingState.waiting_for_plate)
@@ -77,8 +77,8 @@ async def process_parking_plate(message: Message, state: FSMContext):
         await message.answer("Скасовано.", reply_markup=kb_additional_services)
         return
 
-    plate = re.sub(r'[\W_]+', '', message.text or '')
-    if len(plate) < 3 or len(plate) > 15:
+    plate = message.text.strip()
+    if not re.match(r'^[A-ZА-ЯІЇЄa-zа-яіїє0-9\s\-]+$', plate) or len(re.sub(r'[\W_]+', '', plate)) < 3 or len(re.sub(r'[\W_]+', '', plate)) > 15:
         await message.answer("Некоректний формат номера. Спробуйте ще раз або натисніть Скасувати.")
         return
 

@@ -193,7 +193,9 @@
               </div>
               <p v-if="parkingStatus.keyfob.state === 'WITH_GUEST' && parkingStatus.keyfob.guest_info" class="text-sm font-bold mt-1">
                 Авто: <span class="uppercase underline font-black text-base">{{ parkingStatus.keyfob.guest_info.license_plate }}</span>
-                <span v-if="parkingStatus.keyfob.guest_info.apartment_number"> (кв. {{ parkingStatus.keyfob.guest_info.apartment_number }})</span>
+                <span v-if="parkingStatus.keyfob.guest_info.full_name"> | {{ parkingStatus.keyfob.guest_info.full_name }}</span>
+                <span v-if="parkingStatus.keyfob.guest_info.phone_number"> | +{{ parkingStatus.keyfob.guest_info.phone_number }}</span>
+                <span v-if="parkingStatus.keyfob.guest_info.building_address"> | {{ parkingStatus.keyfob.guest_info.building_address }}, кв. {{ parkingStatus.keyfob.guest_info.apartment_number }}</span>
               </p>
               <p v-else class="text-xs font-medium opacity-90 mt-1">Брелок вільний для видачі наступній машині.</p>
             </div>

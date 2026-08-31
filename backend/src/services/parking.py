@@ -88,19 +88,24 @@ async def get_parking_status(db: AsyncSession) -> ParkingDashboardStatus:
         
         if req:
             apt_num = None
+            bld_addr = None
             user_stmt = select(User).where(User.id == req.user_id)
             user_res = await db.execute(user_stmt)
             user = user_res.scalars().first()
             if user and user.apartment_id:
-                apt_stmt = select(Apartment).where(Apartment.id == user.apartment_id)
+                apt_stmt = select(Apartment).options(selectinload(Apartment.building)).where(Apartment.id == user.apartment_id)
                 apt_res = await db.execute(apt_stmt)
                 apt = apt_res.scalars().first()
                 if apt:
                     apt_num = apt.number
+                    bld_addr = apt.building.address if apt.building else None
 
             guest_info = KeyfobGuestInfo(
                 license_plate=req.license_plate,
-                apartment_number=str(apt_num) if apt_num else None
+                apartment_number=str(apt_num) if apt_num else None,
+                full_name=user.full_name if user else None,
+                phone_number=user.phone_number if user else None,
+                building_address=bld_addr
             )
 
     keyfob_out = KeyfobStatusOut(
