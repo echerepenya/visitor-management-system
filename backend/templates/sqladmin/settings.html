@@ -1,0 +1,49 @@
+{% extends "sqladmin/layout.html" %}
+
+{% block content %}
+<div class="container-xl">
+  <div class="page-header d-print-none">
+    <div class="row align-items-center">
+      <div class="col">
+        <h2 class="page-title">Налаштування</h2>
+        <div class="text-muted mt-1">Глобальні налаштування системи</div>
+      </div>
+    </div>
+  </div>
+
+  <form method="POST" action="">
+    <div class="row row-cards mt-3">
+      <div class="col-12 col-md-6">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Гостьова парковка</h3>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label required">Дефолтна кількість місць на гостьовій парковці</label>
+              <input type="number" class="form-control" name="guest_parking_spots" value="{{ settings.guest_parking_spots }}" required min="0">
+              <small class="form-hint">Скільки місць є фізично доступними для гостей.</small>
+            </div>
+            
+            <div class="mb-3">
+              <label class="form-label">Пост охорони (отримувач повідомлень)</label>
+              <select class="form-select" name="guest_parking_post_id">
+                <option value="">-- Не обрано --</option>
+                {% for guard in guards %}
+                  <option value="{{ guard.id }}" {% if settings.guest_parking_post_id == guard.id %}selected{% endif %}>
+                    {{ guard.full_name or guard.username or guard.phone_number }}
+                  </option>
+                {% endfor %}
+              </select>
+              <small class="form-hint">Оберіть пост охорони, який буде отримувати заявки на гостьову парковку.</small>
+            </div>
+          </div>
+          <div class="card-footer text-end">
+            <button type="submit" class="btn btn-primary">Зберегти</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

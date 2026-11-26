@@ -31,7 +31,7 @@ class User(Base):
     is_admin = Column(Boolean, default=False, nullable=False)  # access to admin panel, allowed to create/edit residents and guards
     is_superadmin = Column(Boolean, default=False, nullable=False)  # allows to create/edit all type users, buildings, apartments
     is_resident_contact = Column(Boolean, default=False, nullable=False)
-    is_guest_parking_allowed = Column(Boolean, default=False, server_default="false", nullable=False)
+    is_guest_parking_allowed = Column(Boolean, default=True, server_default="true", nullable=False)
 
     apartment_id = Column(Integer, ForeignKey("apartments.id"), nullable=True)
     apartment = relationship("Apartment", back_populates="residents", lazy="selectin", enable_typechecks=False)

@@ -55,15 +55,16 @@ async def cmd_parking(message: Message, state: FSMContext):
         logger.error(f"Error fetching parking status: {e}")
     
     if status_resp and status_resp.get("free_spots", 0) <= 0:
+        await state.set_state(None)
         await message.answer("На жаль, наразі немає вільних гостьових паркомісць. Спробуйте пізніше.",
-                             reply_markup=kb_additional_services)
+                             reply_markup=kb_main)
         return
     
     free_spots = status_resp.get("free_spots", 0) if status_resp else "?"
     
     await message.answer(
         f"🅿️ **Гостьова парковка**\nВільних місць: **{free_spots}/11**\n\n"
-        "Введіть номер авто (без пробілів, лише букви та цифри):",
+        "✍️ Введіть **номер авто**:",
         reply_markup=kb_cancel
     )
     await state.set_state(ParkingState.waiting_for_plate)
@@ -76,8 +77,8 @@ async def process_parking_plate(message: Message, state: FSMContext):
         await message.answer("Скасовано.", reply_markup=kb_additional_services)
         return
 
-    plate = re.sub(r'[\W_]+', '', message.text or '')
-    if len(plate) < 3 or len(plate) > 15:
+    plate = message.text.strip()
+    if not re.match(r'^[A-ZА-ЯІЇЄa-zа-яіїє0-9\s\-]+$', plate) or len(re.sub(r'[\W_]+', '', plate)) < 3 or len(re.sub(r'[\W_]+', '', plate)) > 15:
         await message.answer("Некоректний формат номера. Спробуйте ще раз або натисніть Скасувати.")
         return
 
@@ -97,9 +98,10 @@ async def process_parking_plate(message: Message, state: FSMContext):
         resp = {"detail": "Помилка з'єднання"}
 
     if resp and resp.get("status") == "ok":
+        guard_post_name = resp.get("guard_post_name", "охорони")
         await message.answer(
             f"✅ Місце для авто **{plate}** заброньовано на 30 хвилин!\n\n"
-            "Зверніться до охорони (Пост 2) для отримання брелока від шлагбаума.",
+            f"Зверніться до {guard_post_name} для отримання брелока від шлагбаума.",
             reply_markup=kb_main
         )
     else:

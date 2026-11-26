@@ -13,6 +13,9 @@ class FreeSpotsOverride(BaseModel):
 class KeyfobGuestInfo(BaseModel):
     license_plate: str
     apartment_number: Optional[str] = None
+    full_name: Optional[str] = None
+    phone_number: Optional[str] = None
+    building_address: Optional[str] = None
 
 class KeyfobStatusOut(BaseModel):
     state: KeyfobState
@@ -37,4 +40,5 @@ class ParkingDashboardStatus(BaseModel):
     total_spots: int
     occupied_spots: int
     free_spots: int
+    guard_post_name: str
     keyfob: KeyfobStatusOut
